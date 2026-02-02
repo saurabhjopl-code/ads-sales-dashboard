@@ -1,0 +1,24 @@
+.acc-tabs {
+  display: flex;
+  gap: 10px;
+  padding: 10px 20px;
+  background: var(--bg-white);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+
+.acc-tab {
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-light);
+  white-space: nowrap;
+}
+
+.acc-tab.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
