@@ -5,6 +5,10 @@ const endInput = document.getElementById("endDate");
   input.addEventListener("change", () => {
     APP_STATE.startDate = startInput.value || null;
     APP_STATE.endDate = endInput.value || null;
-    renderActiveRoute();
+
+    // 🔥 IMPORTANT: re-render everything
+    if (typeof renderAll === "function") {
+      renderAll();
+    }
   });
 });
