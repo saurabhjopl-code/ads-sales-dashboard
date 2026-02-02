@@ -14,8 +14,17 @@ window.renderSummaryCTR = function () {
 
   function parseDate(value) {
     if (!value) return null;
+
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(value);
+    }
+
     const parts = value.includes("/") ? value.split("/") : value.split("-");
-    return new Date(parts[2], parts[1] - 1, parts[0]);
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+
+    return null;
   }
 
   const rows = APP_STATE.data.CTR.filter(r => {
