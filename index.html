@@ -1,29 +1,173 @@
-  <!-- Chart.js -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Ads & Sales Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- Base Styles -->
+  <link rel="stylesheet" href="css/base.css" />
+  <link rel="stylesheet" href="css/layout.css" />
+  <link rel="stylesheet" href="css/sidebar.css" />
+  <link rel="stylesheet" href="css/tabs.css" />
+  <link rel="stylesheet" href="css/summary.css" />
+  <link rel="stylesheet" href="css/tables.css" />
+  <link rel="stylesheet" href="css/charts.css" />
+</head>
+
+<body>
 
   <!-- =========================
-       CORE JS
+       HEADER (GLOBAL FILTERS)
+  ========================== -->
+  <header class="top-header">
+    <div class="date-filters">
+      <label>
+        Date Range
+        <input type="date" id="startDate" />
+        <input type="date" id="endDate" />
+      </label>
+
+      <label>
+        Week
+        <select id="weekSelector">
+          <option value="">All</option>
+        </select>
+      </label>
+    </div>
+  </header>
+
+  <!-- =========================
+       ACC TABS
+  ========================== -->
+  <section class="acc-tabs" id="accTabs">
+    <!-- Dynamically generated -->
+  </section>
+
+  <!-- =========================
+       MAIN LAYOUT
+  ========================== -->
+  <div class="app-container">
+
+    <!-- =========================
+         SIDEBAR NAVIGATION
+    ========================== -->
+    <aside class="sidebar">
+      <nav>
+        <ul>
+          <li class="nav-section">Dashboard</li>
+
+          <li class="nav-section">Sales</li>
+          <li data-route="sales-health" class="nav-item active">
+            Sales Health
+          </li>
+
+          <li class="nav-section">Advertising</li>
+          <li data-route="spend-vs-sales" class="nav-item">
+            Spend vs Sales
+          </li>
+          <li data-route="campaign-performance" class="nav-item">
+            Campaign Performance
+          </li>
+          <li data-route="keyword-performance" class="nav-item">
+            Keyword Performance
+          </li>
+          <li data-route="placement-performance" class="nav-item">
+            Placement Performance
+          </li>
+
+          <li class="nav-section">Product</li>
+          <li data-route="sku-performance" class="nav-item">
+            SKU / FSN Performance
+          </li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- =========================
+         MAIN CONTENT
+    ========================== -->
+    <main class="main-content">
+
+      <!-- =========================
+           SUMMARIES (TOP)
+      ========================== -->
+      <section class="summaries">
+
+        <!-- Summary 1 -->
+        <div class="summary-card" id="summary-gmv">
+          <h3>Sales Performance Snapshot (GMV)</h3>
+          <div class="summary-grid"></div>
+        </div>
+
+        <!-- Summary 4 -->
+        <div class="summary-card" id="summary-ctr">
+          <h3>Sales Performance Snapshot (Transactions)</h3>
+          <div class="summary-grid"></div>
+        </div>
+
+        <!-- Summary 2 -->
+        <div class="summary-card" id="summary-ads">
+          <h3>Advertising Performance Snapshot</h3>
+          <div class="summary-grid"></div>
+        </div>
+
+        <!-- Summary 3 -->
+        <div class="summary-card" id="summary-efficiency">
+          <h3>Ads Efficiency & Budget Control</h3>
+          <div class="summary-grid"></div>
+        </div>
+
+      </section>
+
+      <!-- =========================
+           REPORT CONTAINER
+      ========================== -->
+      <section class="report-container">
+
+        <!-- Page Title -->
+        <h2 id="reportTitle">Sales Health</h2>
+
+        <!-- Charts -->
+        <div class="charts-section" id="chartsSection">
+          <!-- Charts injected by JS -->
+        </div>
+
+        <!-- Table -->
+        <div class="table-section" id="tableSection">
+          <!-- Table injected by JS -->
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+  <!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- =========================
+       JS FILES (NO LOGIC YET)
   ========================== -->
   <script src="js/core/accTabs.js"></script>
   <script src="js/core/dateFilter.js"></script>
   <script src="js/core/weekFilter.js"></script>
   <script src="js/core/router.js"></script>
 
-  <!-- =========================
-       SUMMARIES
-  ========================== -->
+  <!-- Summaries -->
   <script src="js/summaries/summaryGMV.js"></script>
   <script src="js/summaries/summaryCTR.js"></script>
   <script src="js/summaries/summaryAds.js"></script>
   <script src="js/summaries/summaryEfficiency.js"></script>
 
-  <!-- =========================
-       REPORTS
-  ========================== -->
+  <!-- Reports -->
   <script src="js/reports/salesHealth.js"></script>
-  <script src="js/reports/categoryVertical.js"></script> <!-- 👈 NEW -->
   <script src="js/reports/spendVsSales.js"></script>
   <script src="js/reports/campaignPerformance.js"></script>
   <script src="js/reports/keywordPerformance.js"></script>
   <script src="js/reports/placementPerformance.js"></script>
   <script src="js/reports/skuPerformance.js"></script>
+
+</body>
+</html>
+
