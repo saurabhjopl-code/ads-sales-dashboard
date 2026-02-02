@@ -16,7 +16,7 @@ window.renderSpendVsSales = function () {
   const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
 
   // -------------------------------
-  // Date Parser (Locked Utility)
+  // Date Parser
   // -------------------------------
   function parseDate(value) {
     if (!value) return null;
@@ -39,11 +39,7 @@ window.renderSpendVsSales = function () {
 
     const key = d.toISOString().slice(0, 10);
     if (!daily[key]) {
-      daily[key] = {
-        grossUnits: 0,
-        netSales: 0,
-        adsSpend: 0
-      };
+      daily[key] = { grossUnits: 0, netSales: 0, adsSpend: 0 };
     }
 
     daily[key].grossUnits += +r["Gross Units"] || 0;
@@ -59,15 +55,21 @@ window.renderSpendVsSales = function () {
 
     const key = d.toISOString().slice(0, 10);
     if (!daily[key]) {
-      daily[key] = {
-        grossUnits: 0,
-        netSales: 0,
-        adsSpend: 0
-      };
+      daily[key] = { grossUnits: 0, netSales: 0, adsSpend: 0 };
     }
 
     daily[key].adsSpend += +r["Ad Spend"] || 0;
   });
+
+  // -------------------------------
+  // PREP DATA (SORTED)
+  // -------------------------------
+  const dates = Object.keys(daily).sort();
+
+  const chartDates = [];
+  const netSalesArr = [];
+  const adsSpendArr = [];
+  const fixedAdsArr = [];
 
   // -------------------------------
   // BUILD TABLE
@@ -95,7 +97,7 @@ window.renderSpendVsSales = function () {
   let totalAdsSpend = 0;
   let totalFixedAds = 0;
 
-  Object.keys(daily).sort().forEach(date => {
+  dates.forEach(date => {
     const r = daily[date];
 
     const fixedAds = r.netSales * 0.03;
@@ -106,6 +108,11 @@ window.renderSpendVsSales = function () {
     totalNetSales += r.netSales;
     totalAdsSpend += r.adsSpend;
     totalFixedAds += fixedAds;
+
+    chartDates.push(date);
+    netSalesArr.push(r.netSales);
+    adsSpendArr.push(r.adsSpend);
+    fixedAdsArr.push(fixedAds);
 
     const diffClass = diffValue > 0 ? "trend-red" : "trend-green";
 
@@ -122,9 +129,6 @@ window.renderSpendVsSales = function () {
     `;
   });
 
-  // -------------------------------
-  // GRAND TOTAL
-  // -------------------------------
   const totalDiff = totalAdsSpend - totalFixedAds;
   const totalDiffPct = totalFixedAds > 0 ? (totalDiff / totalFixedAds) * 100 : 0;
   const totalClass = totalDiff > 0 ? "trend-red" : "trend-green";
@@ -142,4 +146,51 @@ window.renderSpendVsSales = function () {
   `;
 
   tableSection.appendChild(table);
+
+  // -------------------------------
+  // CHART
+  // -------------------------------
+  const canvas = document.createElement("canvas");
+  chartsSection.appendChild(canvas);
+
+  new Chart(canvas.getContext("2d"), {
+    type: "line",
+    data: {
+      labels: chartDates,
+      datasets: [
+        {
+          label: "Net Sales (GMV)",
+          data: netSalesArr,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: "Actual Ads Spend",
+          data: adsSpendArr,
+          borderWidth: 2,
+          tension: 0.3
+        },
+        {
+          label: "Fixed Ads (3%)",
+          data: fixedAdsArr,
+          borderWidth: 2,
+          borderDash: [5, 5],
+          tension: 0.3
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: "top" }
+      },
+      scales: {
+        y: {
+          ticks: {
+            callback: value => "₹ " + value.toLocaleString()
+          }
+        }
+      }
+    }
+  });
 };
