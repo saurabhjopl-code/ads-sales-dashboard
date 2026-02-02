@@ -1,6 +1,7 @@
 // =======================================
 // REPORT: Category / Vertical View – V3.3
 // Source: GMV
+// NOTE: Appends below Sales Health (does NOT clear containers)
 // =======================================
 
 window.renderCategoryVertical = function () {
@@ -8,9 +9,6 @@ window.renderCategoryVertical = function () {
   const chartsSection = document.getElementById("chartsSection");
 
   if (!tableSection || !chartsSection || !APP_STATE.activeACC) return;
-
-  tableSection.innerHTML = "";
-  chartsSection.innerHTML = "";
 
   const acc = APP_STATE.activeACC;
   const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
@@ -22,6 +20,16 @@ window.renderCategoryVertical = function () {
     const p = value.includes("/") ? value.split("/") : value.split("-");
     return new Date(p[2], p[1] - 1, p[0]);
   }
+
+  // ================================
+  // WRAPPER (SO IT DOESN'T COLLIDE)
+  // ================================
+  const wrapper = document.createElement("div");
+  wrapper.style.marginTop = "40px";
+
+  const title = document.createElement("h3");
+  title.innerText = "Category / Vertical View";
+  wrapper.appendChild(title);
 
   // -------------------------------
   // AGGREGATE MAPS
@@ -46,7 +54,6 @@ window.renderCategoryVertical = function () {
 
     totalNetSales += netSales;
 
-    // Vertical aggregation
     if (!verticalMap[vertical]) {
       verticalMap[vertical] = {
         vertical,
@@ -62,18 +69,15 @@ window.renderCategoryVertical = function () {
     verticalMap[vertical].netUnits += netUnits;
     verticalMap[vertical].netSales += netSales;
 
-    // Fulfillment aggregation
-    if (!fulfillmentMap[fulfillment]) {
-      fulfillmentMap[fulfillment] = 0;
-    }
-    fulfillmentMap[fulfillment] += netSales;
+    fulfillmentMap[fulfillment] =
+      (fulfillmentMap[fulfillment] || 0) + netSales;
   });
 
-  // =====================================================
-  // CHART 1: Fulfillment Type – Pie
-  // =====================================================
+  // ================================
+  // PIE CHART – FULFILLMENT
+  // ================================
   const canvas = document.createElement("canvas");
-  chartsSection.appendChild(canvas);
+  wrapper.appendChild(canvas);
 
   new Chart(canvas.getContext("2d"), {
     type: "pie",
@@ -86,18 +90,20 @@ window.renderCategoryVertical = function () {
       ]
     },
     options: {
-      responsive: true,
       plugins: {
-        legend: {
-          position: "bottom"
-        }
+        legend: { position: "bottom" }
       }
     }
   });
 
-  // =====================================================
-  // TABLE: Category / Vertical View
-  // =====================================================
+  chartsSection.appendChild(wrapper);
+
+  // ================================
+  // TABLE – VERTICAL PERFORMANCE
+  // ================================
+  const tableWrapper = document.createElement("div");
+  tableWrapper.style.marginTop = "32px";
+
   const table = document.createElement("table");
   table.innerHTML = `
     <thead>
@@ -133,5 +139,6 @@ window.renderCategoryVertical = function () {
       `;
     });
 
-  tableSection.appendChild(table);
+  tableWrapper.appendChild(table);
+  tableSection.appendChild(tableWrapper);
 };
