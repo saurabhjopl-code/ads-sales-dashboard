@@ -93,26 +93,37 @@ function initNavigation() {
 }
 
 // ================================
-// MASTER RENDER
+// MASTER RENDER (SAFE)
 // ================================
 function renderAll() {
-  // Summaries (always visible)
-  window.renderSummaryGMV?.();
-  window.renderSummaryCTR?.();
-  window.renderSummaryAds?.();
-  window.renderSummaryEfficiency?.();
+  try {
+    // Summaries
+    window.renderSummaryGMV?.();
+    window.renderSummaryCTR?.();
+    window.renderSummaryAds?.();
+    window.renderSummaryEfficiency?.();
 
-  // Reports
-  if (APP_STATE.activeRoute === "sales-health") {
-    window.renderSalesHealth?.();
-    window.renderCategoryVertical?.(); // 👈 NEW (below Sales Health)
+    // Reports
+    if (APP_STATE.activeRoute === "sales-health") {
+      window.renderSalesHealth?.();
+
+      // Secondary block – NEVER crash page
+      try {
+        window.renderCategoryVertical?.();
+      } catch (e) {
+        console.error("Category / Vertical render failed:", e);
+      }
+    }
+
+    if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
+    if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
+    if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
+    if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
+    if (APP_STATE.activeRoute === "sku-performance") window.renderSkuPerformance?.();
+
+  } catch (e) {
+    console.error("Fatal render error:", e);
   }
-
-  if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
-  if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
-  if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
-  if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
-  if (APP_STATE.activeRoute === "sku-performance") window.renderSkuPerformance?.();
 }
 
 // ================================
