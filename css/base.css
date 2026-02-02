@@ -1,0 +1,29 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: "Inter", "Segoe UI", Roboto, Arial, sans-serif;
+  background-color: #f6f7fb;
+  color: #1f2937;
+}
+
+:root {
+  --primary: #2563eb;
+  --secondary: #64748b;
+  --success: #16a34a;
+  --danger: #dc2626;
+  --warning: #f59e0b;
+
+  --bg-white: #ffffff;
+  --bg-light: #f1f5f9;
+  --border: #e5e7eb;
+
+  --text-dark: #111827;
+  --text-light: #6b7280;
+
+  --radius: 10px;
+}
