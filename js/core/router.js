@@ -96,14 +96,18 @@ function initNavigation() {
 // MASTER RENDER
 // ================================
 function renderAll() {
-  // Summaries
+  // Summaries (always visible)
   window.renderSummaryGMV?.();
   window.renderSummaryCTR?.();
   window.renderSummaryAds?.();
   window.renderSummaryEfficiency?.();
 
   // Reports
-  if (APP_STATE.activeRoute === "sales-health") window.renderSalesHealth?.();
+  if (APP_STATE.activeRoute === "sales-health") {
+    window.renderSalesHealth?.();
+    window.renderCategoryVertical?.(); // 👈 NEW (below Sales Health)
+  }
+
   if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
   if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
   if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
