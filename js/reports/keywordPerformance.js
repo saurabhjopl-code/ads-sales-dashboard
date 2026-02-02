@@ -1,6 +1,7 @@
 // =======================================
 // REPORT: Keyword Performance – V3.1
-// Source: CKR (Keyword Level)
+// Clean View + Charts (Top 10)
+// Source: CKR
 // =======================================
 
 window.renderKeywordPerformance = function () {
@@ -13,15 +14,6 @@ window.renderKeywordPerformance = function () {
   chartsSection.innerHTML = "";
 
   const acc = APP_STATE.activeACC;
-  const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
-  const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
-
-  function parseDate(value) {
-    if (!value) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
-    const p = value.includes("/") ? value.split("/") : value.split("-");
-    return new Date(p[2], p[1] - 1, p[0]);
-  }
 
   // -------------------------------
   // AGGREGATE BY KEYWORD
@@ -62,27 +54,29 @@ window.renderKeywordPerformance = function () {
     map[key].indirectRevenue += +r["Indirect Revenue"] || 0;
   });
 
+  const keywords = Object.values(map).map(k => {
+    const totalRevenue = k.directRevenue + k.indirectRevenue;
+    const roi = k.spend > 0 ? totalRevenue / k.spend : 0;
+    return { ...k, totalRevenue, roi };
+  });
+
   // -------------------------------
-  // BUILD TABLE
+  // BUILD TABLE (UNCHANGED)
   // -------------------------------
   const table = document.createElement("table");
   table.innerHTML = `
     <thead>
       <tr>
         <th>Keyword</th>
-        <th>Match Type</th>
+        <th>Match</th>
         <th>Campaign</th>
-        <th>Ad Group</th>
         <th>Views</th>
         <th>Clicks</th>
-        <th>CTR (%)</th>
-        <th>Ad Spend</th>
-        <th>Direct Units</th>
-        <th>Indirect Units</th>
+        <th>CTR %</th>
+        <th>Spend</th>
         <th>Total Units</th>
         <th>Total Revenue</th>
         <th>ROI</th>
-        <th>Direct ROI</th>
         <th>Action</th>
       </tr>
     </thead>
@@ -91,22 +85,19 @@ window.renderKeywordPerformance = function () {
 
   const tbody = table.querySelector("tbody");
 
-  Object.values(map).forEach(k => {
+  keywords.forEach(k => {
     const ctr = k.views > 0 ? (k.clicks / k.views) * 100 : 0;
     const totalUnits = k.directUnits + k.indirectUnits;
-    const totalRevenue = k.directRevenue + k.indirectRevenue;
-    const roi = k.spend > 0 ? totalRevenue / k.spend : 0;
-    const directROI = k.spend > 0 ? k.directRevenue / k.spend : 0;
 
     let action = "OPTIMIZE";
-    let actionClass = "trend-amber";
+    let cls = "trend-amber";
 
-    if (roi >= 4 && k.directUnits >= 2) {
+    if (k.roi >= 4 && k.directUnits >= 2) {
       action = "SCALE";
-      actionClass = "trend-green";
-    } else if (roi < 2 || (k.spend > 0 && totalUnits === 0)) {
+      cls = "trend-green";
+    } else if (k.roi < 2 || (k.spend > 0 && totalUnits === 0)) {
       action = "PAUSE";
-      actionClass = "trend-red";
+      cls = "trend-red";
     }
 
     tbody.innerHTML += `
@@ -114,21 +105,97 @@ window.renderKeywordPerformance = function () {
         <td>${k.keyword}</td>
         <td>${k.matchType}</td>
         <td>${k.campaign}</td>
-        <td>${k.adgroup}</td>
         <td>${k.views.toLocaleString()}</td>
         <td>${k.clicks.toLocaleString()}</td>
         <td>${ctr.toFixed(2)}%</td>
         <td>₹ ${k.spend.toLocaleString()}</td>
-        <td>${k.directUnits}</td>
-        <td>${k.indirectUnits}</td>
         <td>${totalUnits}</td>
-        <td>₹ ${totalRevenue.toLocaleString()}</td>
-        <td>${roi.toFixed(2)}</td>
-        <td>${directROI.toFixed(2)}</td>
-        <td class="${actionClass}" style="font-weight:700;">${action}</td>
+        <td>₹ ${k.totalRevenue.toLocaleString()}</td>
+        <td>${k.roi.toFixed(2)}</td>
+        <td class="${cls}" style="font-weight:700">${action}</td>
       </tr>
     `;
   });
 
   tableSection.appendChild(table);
+
+  // =====================================================
+  // CHARTS – TOP 10 KEYWORDS
+  // =====================================================
+
+  const topBySpend = keywords
+    .filter(k => k.spend > 0)
+    .sort((a, b) => b.spend - a.spend)
+    .slice(0, 10);
+
+  const topByROI = keywords
+    .filter(k => k.spend > 0)
+    .sort((a, b) => b.roi - a.roi)
+    .slice(0, 10);
+
+  // -------------------------------
+  // Chart 1: Spend vs Revenue
+  // -------------------------------
+  const canvas1 = document.createElement("canvas");
+  chartsSection.appendChild(canvas1);
+
+  new Chart(canvas1.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: topBySpend.map(k => k.keyword),
+      datasets: [
+        {
+          label: "Ad Spend",
+          data: topBySpend.map(k => k.spend)
+        },
+        {
+          label: "Total Revenue",
+          data: topBySpend.map(k => k.totalRevenue)
+        }
+      ]
+    },
+    options: {
+      indexAxis: "y",
+      plugins: {
+        legend: { position: "top" }
+      },
+      scales: {
+        x: {
+          ticks: {
+            callback: v => "₹ " + v.toLocaleString()
+          }
+        }
+      }
+    }
+  });
+
+  // -------------------------------
+  // Chart 2: ROI (Top 10)
+  // -------------------------------
+  const canvas2 = document.createElement("canvas");
+  canvas2.style.marginTop = "32px";
+  chartsSection.appendChild(canvas2);
+
+  new Chart(canvas2.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: topByROI.map(k => k.keyword),
+      datasets: [
+        {
+          label: "ROI",
+          data: topByROI.map(k => k.roi)
+        }
+      ]
+    },
+    options: {
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
 };
