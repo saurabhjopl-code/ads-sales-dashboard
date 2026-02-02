@@ -12,13 +12,24 @@ window.renderSummaryGMV = function () {
   const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
   const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
 
-  // -------------------------------
-  // DATE PARSER (DD-MM-YYYY / DD/MM/YYYY)
-  // -------------------------------
+  // -----------------------------------
+  // ROBUST DATE PARSER
+  // -----------------------------------
   function parseDate(value) {
     if (!value) return null;
+
+    // YYYY-MM-DD
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return new Date(value);
+    }
+
+    // DD-MM-YYYY or DD/MM/YYYY
     const parts = value.includes("/") ? value.split("/") : value.split("-");
-    return new Date(parts[2], parts[1] - 1, parts[0]);
+    if (parts.length === 3) {
+      return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+
+    return null;
   }
 
   const rows = APP_STATE.data.GMV.filter(r => {
