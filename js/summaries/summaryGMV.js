@@ -9,13 +9,27 @@ window.renderSummaryGMV = function () {
   container.innerHTML = "";
 
   const acc = APP_STATE.activeACC;
-  const start = APP_STATE.startDate;
-  const end = APP_STATE.endDate;
+  const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
+  const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
+
+  // -------------------------------
+  // DATE PARSER (DD-MM-YYYY / DD/MM/YYYY)
+  // -------------------------------
+  function parseDate(value) {
+    if (!value) return null;
+    const parts = value.includes("/") ? value.split("/") : value.split("-");
+    return new Date(parts[2], parts[1] - 1, parts[0]);
+  }
 
   const rows = APP_STATE.data.GMV.filter(r => {
     if (r.ACC !== acc) return false;
-    if (start && r["Order Date"] < start) return false;
-    if (end && r["Order Date"] > end) return false;
+
+    const rowDate = parseDate(r["Order Date"]);
+    if (!rowDate) return false;
+
+    if (start && rowDate < start) return false;
+    if (end && rowDate > end) return false;
+
     return true;
   });
 
