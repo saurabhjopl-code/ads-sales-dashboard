@@ -15,13 +15,9 @@ window.renderSalesHealth = function () {
   const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
   const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
 
-  // -------------------------------
-  // Date Parser
-  // -------------------------------
   function parseDate(value) {
     if (!value) return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
-
     const p = value.includes("/") ? value.split("/") : value.split("-");
     return new Date(p[2], p[1] - 1, p[0]);
   }
@@ -30,7 +26,7 @@ window.renderSalesHealth = function () {
   // Tabs UI
   // -------------------------------
   const tabWrapper = document.createElement("div");
-  tabWrapper.className = "acc-tabs"; // reuse ACC tab styling
+  tabWrapper.className = "acc-tabs";
 
   const ctrTab = document.createElement("div");
   ctrTab.className = "acc-tab active";
@@ -48,12 +44,17 @@ window.renderSalesHealth = function () {
   tableSection.appendChild(contentDiv);
 
   // -------------------------------
-  // RENDER CTR TABLE
+  // CTR TABLE
   // -------------------------------
   function renderCTRTable() {
     contentDiv.innerHTML = "";
 
     const daily = {};
+    const total = {
+      saleU: 0, saleA: 0,
+      cancelU: 0, cancelA: 0,
+      returnU: 0, returnA: 0
+    };
 
     APP_STATE.data.CTR.forEach(r => {
       if (r.ACC !== acc) return;
@@ -77,12 +78,18 @@ window.renderSalesHealth = function () {
       if (type === "sale") {
         daily[key].saleU += qty;
         daily[key].saleA += amt;
+        total.saleU += qty;
+        total.saleA += amt;
       } else if (type === "cancellation") {
         daily[key].cancelU += qty;
         daily[key].cancelA += amt;
+        total.cancelU += qty;
+        total.cancelA += amt;
       } else if (type === "return") {
         daily[key].returnU += qty;
         daily[key].returnA += amt;
+        total.returnU += qty;
+        total.returnA += amt;
       }
     });
 
@@ -126,16 +133,40 @@ window.renderSalesHealth = function () {
       `;
     });
 
+    // GRAND TOTAL
+    const netUnitsTotal = total.saleU - total.cancelU - total.returnU;
+    const netAmtTotal = total.saleA - total.cancelA - total.returnA;
+
+    tbody.innerHTML += `
+      <tr style="font-weight:600;background:#f1f5f9;">
+        <td>Grand Total</td>
+        <td>${total.saleU}</td>
+        <td>₹ ${total.saleA.toLocaleString()}</td>
+        <td>${total.cancelU}</td>
+        <td>₹ ${total.cancelA.toLocaleString()}</td>
+        <td>${total.returnU}</td>
+        <td>₹ ${total.returnA.toLocaleString()}</td>
+        <td>${netUnitsTotal}</td>
+        <td>₹ ${netAmtTotal.toLocaleString()}</td>
+      </tr>
+    `;
+
     contentDiv.appendChild(table);
   }
 
   // -------------------------------
-  // RENDER GMV TABLE
+  // GMV TABLE
   // -------------------------------
   function renderGMVTable() {
     contentDiv.innerHTML = "";
 
     const daily = {};
+    const total = {
+      grossU: 0, grossA: 0,
+      cancelU: 0, cancelA: 0,
+      returnU: 0, returnA: 0,
+      finalA: 0
+    };
 
     APP_STATE.data.GMV.forEach(r => {
       if (r.ACC !== acc) return;
@@ -161,6 +192,14 @@ window.renderSalesHealth = function () {
       daily[key].returnA += +r["Return Amount"] || 0;
       daily[key].finalU += +r["Final Sale Units"] || 0;
       daily[key].finalA += +r["Final Sale Amount"] || 0;
+
+      total.grossU += +r["Gross Units"] || 0;
+      total.grossA += +r["GMV"] || 0;
+      total.cancelU += +r["Cancellation Units"] || 0;
+      total.cancelA += +r["Cancellation Amount"] || 0;
+      total.returnU += +r["Return Units"] || 0;
+      total.returnA += +r["Return Amount"] || 0;
+      total.finalA += +r["Final Sale Amount"] || 0;
     });
 
     const table = document.createElement("table");
@@ -202,11 +241,27 @@ window.renderSalesHealth = function () {
       `;
     });
 
+    const netUnitsTotal = total.grossU - total.cancelU - total.returnU;
+
+    tbody.innerHTML += `
+      <tr style="font-weight:600;background:#f1f5f9;">
+        <td>Grand Total</td>
+        <td>${total.grossU}</td>
+        <td>₹ ${total.grossA.toLocaleString()}</td>
+        <td>${total.cancelU}</td>
+        <td>₹ ${total.cancelA.toLocaleString()}</td>
+        <td>${total.returnU}</td>
+        <td>₹ ${total.returnA.toLocaleString()}</td>
+        <td>${netUnitsTotal}</td>
+        <td>₹ ${total.finalA.toLocaleString()}</td>
+      </tr>
+    `;
+
     contentDiv.appendChild(table);
   }
 
   // -------------------------------
-  // Tab Clicks
+  // Tab Events
   // -------------------------------
   ctrTab.onclick = () => {
     ctrTab.classList.add("active");
@@ -220,6 +275,5 @@ window.renderSalesHealth = function () {
     renderGMVTable();
   };
 
-  // Default
   renderCTRTable();
 };
