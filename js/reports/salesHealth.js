@@ -44,13 +44,25 @@ window.renderSalesHealth = function () {
   tableSection.appendChild(contentDiv);
 
   // -------------------------------
+  // COLOR LOGIC
+  // -------------------------------
+  function getTrendColor(curr, prev) {
+    if (prev === null) return "";
+    const diff = curr - prev;
+
+    if (diff > 0) return "trend-green";
+    if (diff < -50) return "trend-red";
+    return "trend-amber";
+  }
+
+  // -------------------------------
   // CTR TABLE
   // -------------------------------
   function renderCTRTable() {
     contentDiv.innerHTML = "";
 
     const daily = {};
-    const total = {
+    const totals = {
       saleU: 0, saleA: 0,
       cancelU: 0, cancelA: 0,
       returnU: 0, returnA: 0
@@ -58,17 +70,12 @@ window.renderSalesHealth = function () {
 
     APP_STATE.data.CTR.forEach(r => {
       if (r.ACC !== acc) return;
-
       const d = parseDate(r["Order Date"]);
       if (!d || (start && d < start) || (end && d > end)) return;
 
       const key = d.toISOString().slice(0, 10);
       if (!daily[key]) {
-        daily[key] = {
-          saleU: 0, saleA: 0,
-          cancelU: 0, cancelA: 0,
-          returnU: 0, returnA: 0
-        };
+        daily[key] = { saleU: 0, saleA: 0, cancelU: 0, cancelA: 0, returnU: 0, returnA: 0 };
       }
 
       const qty = +r["Item Quantity"] || 0;
@@ -78,20 +85,23 @@ window.renderSalesHealth = function () {
       if (type === "sale") {
         daily[key].saleU += qty;
         daily[key].saleA += amt;
-        total.saleU += qty;
-        total.saleA += amt;
+        totals.saleU += qty;
+        totals.saleA += amt;
       } else if (type === "cancellation") {
         daily[key].cancelU += qty;
         daily[key].cancelA += amt;
-        total.cancelU += qty;
-        total.cancelA += amt;
+        totals.cancelU += qty;
+        totals.cancelA += amt;
       } else if (type === "return") {
         daily[key].returnU += qty;
         daily[key].returnA += amt;
-        total.returnU += qty;
-        total.returnA += amt;
+        totals.returnU += qty;
+        totals.returnA += amt;
       }
     });
+
+    const dates = Object.keys(daily).sort();
+    let prevUnits = null;
 
     const table = document.createElement("table");
     table.innerHTML = `
@@ -113,15 +123,18 @@ window.renderSalesHealth = function () {
 
     const tbody = table.querySelector("tbody");
 
-    Object.keys(daily).sort().forEach(date => {
+    dates.forEach(date => {
       const r = daily[date];
       const netU = r.saleU - r.cancelU - r.returnU;
       const netA = r.saleA - r.cancelA - r.returnA;
 
+      const colorClass = getTrendColor(r.saleU, prevUnits);
+      prevUnits = r.saleU;
+
       tbody.innerHTML += `
         <tr>
           <td>${date}</td>
-          <td>${r.saleU}</td>
+          <td class="${colorClass}">${r.saleU}</td>
           <td>₹ ${r.saleA.toLocaleString()}</td>
           <td>${r.cancelU}</td>
           <td>₹ ${r.cancelA.toLocaleString()}</td>
@@ -133,19 +146,18 @@ window.renderSalesHealth = function () {
       `;
     });
 
-    // GRAND TOTAL
-    const netUnitsTotal = total.saleU - total.cancelU - total.returnU;
-    const netAmtTotal = total.saleA - total.cancelA - total.returnA;
+    const netUnitsTotal = totals.saleU - totals.cancelU - totals.returnU;
+    const netAmtTotal = totals.saleA - totals.cancelA - totals.returnA;
 
     tbody.innerHTML += `
-      <tr style="font-weight:600;background:#f1f5f9;">
+      <tr class="grand-total">
         <td>Grand Total</td>
-        <td>${total.saleU}</td>
-        <td>₹ ${total.saleA.toLocaleString()}</td>
-        <td>${total.cancelU}</td>
-        <td>₹ ${total.cancelA.toLocaleString()}</td>
-        <td>${total.returnU}</td>
-        <td>₹ ${total.returnA.toLocaleString()}</td>
+        <td>${totals.saleU}</td>
+        <td>₹ ${totals.saleA.toLocaleString()}</td>
+        <td>${totals.cancelU}</td>
+        <td>₹ ${totals.cancelA.toLocaleString()}</td>
+        <td>${totals.returnU}</td>
+        <td>₹ ${totals.returnA.toLocaleString()}</td>
         <td>${netUnitsTotal}</td>
         <td>₹ ${netAmtTotal.toLocaleString()}</td>
       </tr>
@@ -155,33 +167,22 @@ window.renderSalesHealth = function () {
   }
 
   // -------------------------------
-  // GMV TABLE
+  // GMV TABLE (same logic)
   // -------------------------------
   function renderGMVTable() {
     contentDiv.innerHTML = "";
 
     const daily = {};
-    const total = {
-      grossU: 0, grossA: 0,
-      cancelU: 0, cancelA: 0,
-      returnU: 0, returnA: 0,
-      finalA: 0
-    };
+    const totals = { grossU: 0, grossA: 0, cancelU: 0, cancelA: 0, returnU: 0, returnA: 0, finalA: 0 };
 
     APP_STATE.data.GMV.forEach(r => {
       if (r.ACC !== acc) return;
-
       const d = parseDate(r["Order Date"]);
       if (!d || (start && d < start) || (end && d > end)) return;
 
       const key = d.toISOString().slice(0, 10);
       if (!daily[key]) {
-        daily[key] = {
-          grossU: 0, grossA: 0,
-          cancelU: 0, cancelA: 0,
-          returnU: 0, returnA: 0,
-          finalU: 0, finalA: 0
-        };
+        daily[key] = { grossU: 0, grossA: 0, cancelU: 0, cancelA: 0, returnU: 0, returnA: 0, finalA: 0 };
       }
 
       daily[key].grossU += +r["Gross Units"] || 0;
@@ -190,17 +191,19 @@ window.renderSalesHealth = function () {
       daily[key].cancelA += +r["Cancellation Amount"] || 0;
       daily[key].returnU += +r["Return Units"] || 0;
       daily[key].returnA += +r["Return Amount"] || 0;
-      daily[key].finalU += +r["Final Sale Units"] || 0;
       daily[key].finalA += +r["Final Sale Amount"] || 0;
 
-      total.grossU += +r["Gross Units"] || 0;
-      total.grossA += +r["GMV"] || 0;
-      total.cancelU += +r["Cancellation Units"] || 0;
-      total.cancelA += +r["Cancellation Amount"] || 0;
-      total.returnU += +r["Return Units"] || 0;
-      total.returnA += +r["Return Amount"] || 0;
-      total.finalA += +r["Final Sale Amount"] || 0;
+      totals.grossU += +r["Gross Units"] || 0;
+      totals.grossA += +r["GMV"] || 0;
+      totals.cancelU += +r["Cancellation Units"] || 0;
+      totals.cancelA += +r["Cancellation Amount"] || 0;
+      totals.returnU += +r["Return Units"] || 0;
+      totals.returnA += +r["Return Amount"] || 0;
+      totals.finalA += +r["Final Sale Amount"] || 0;
     });
+
+    const dates = Object.keys(daily).sort();
+    let prevUnits = null;
 
     const table = document.createElement("table");
     table.innerHTML = `
@@ -222,14 +225,16 @@ window.renderSalesHealth = function () {
 
     const tbody = table.querySelector("tbody");
 
-    Object.keys(daily).sort().forEach(date => {
+    dates.forEach(date => {
       const r = daily[date];
       const netU = r.grossU - r.cancelU - r.returnU;
+      const colorClass = getTrendColor(r.grossU, prevUnits);
+      prevUnits = r.grossU;
 
       tbody.innerHTML += `
         <tr>
           <td>${date}</td>
-          <td>${r.grossU}</td>
+          <td class="${colorClass}">${r.grossU}</td>
           <td>₹ ${r.grossA.toLocaleString()}</td>
           <td>${r.cancelU}</td>
           <td>₹ ${r.cancelA.toLocaleString()}</td>
@@ -241,28 +246,25 @@ window.renderSalesHealth = function () {
       `;
     });
 
-    const netUnitsTotal = total.grossU - total.cancelU - total.returnU;
+    const netUnitsTotal = totals.grossU - totals.cancelU - totals.returnU;
 
     tbody.innerHTML += `
-      <tr style="font-weight:600;background:#f1f5f9;">
+      <tr class="grand-total">
         <td>Grand Total</td>
-        <td>${total.grossU}</td>
-        <td>₹ ${total.grossA.toLocaleString()}</td>
-        <td>${total.cancelU}</td>
-        <td>₹ ${total.cancelA.toLocaleString()}</td>
-        <td>${total.returnU}</td>
-        <td>₹ ${total.returnA.toLocaleString()}</td>
+        <td>${totals.grossU}</td>
+        <td>₹ ${totals.grossA.toLocaleString()}</td>
+        <td>${totals.cancelU}</td>
+        <td>₹ ${totals.cancelA.toLocaleString()}</td>
+        <td>${totals.returnU}</td>
+        <td>₹ ${totals.returnA.toLocaleString()}</td>
         <td>${netUnitsTotal}</td>
-        <td>₹ ${total.finalA.toLocaleString()}</td>
+        <td>₹ ${totals.finalA.toLocaleString()}</td>
       </tr>
     `;
 
     contentDiv.appendChild(table);
   }
 
-  // -------------------------------
-  // Tab Events
-  // -------------------------------
   ctrTab.onclick = () => {
     ctrTab.classList.add("active");
     gmvTab.classList.remove("active");
