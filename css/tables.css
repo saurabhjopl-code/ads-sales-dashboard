@@ -1,0 +1,30 @@
+.table-section {
+  background: var(--bg-white);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 15px;
+  margin-top: 20px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th {
+  background: var(--bg-light);
+  font-size: 12px;
+  text-align: left;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+td {
+  font-size: 13px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+tr:hover td {
+  background: #f9fafb;
+}
