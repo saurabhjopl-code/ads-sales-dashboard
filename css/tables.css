@@ -28,3 +28,27 @@ td {
 tr:hover td {
   background: #f9fafb;
 }
+
+/* =====================================
+   Sales Health – Trend & Totals
+   ===================================== */
+
+.trend-green {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.trend-amber {
+  color: #d97706;
+  font-weight: 600;
+}
+
+.trend-red {
+  color: #dc2626;
+  font-weight: 600;
+}
+
+.grand-total {
+  background-color: #f1f5f9;
+  font-weight: 700;
+}
