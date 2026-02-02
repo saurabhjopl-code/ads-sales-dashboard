@@ -4,62 +4,40 @@
 
 window.renderSummaryGMV = function () {
   const container = document.querySelector("#summary-gmv .summary-grid");
-  if (!container) return;
+  if (!container || !APP_STATE.activeACC) return;
 
   container.innerHTML = "";
 
-  const { GMV } = APP_STATE.data;
   const acc = APP_STATE.activeACC;
   const start = APP_STATE.startDate;
   const end = APP_STATE.endDate;
 
-  // -------------------------------
-  // FILTER DATA (ACC + DATE)
-  // -------------------------------
-  const filtered = GMV.filter(row => {
-    if (row.ACC !== acc) return false;
-
-    if (start && row["Order Date"] < start) return false;
-    if (end && row["Order Date"] > end) return false;
-
+  const rows = APP_STATE.data.GMV.filter(r => {
+    if (r.ACC !== acc) return false;
+    if (start && r["Order Date"] < start) return false;
+    if (end && r["Order Date"] > end) return false;
     return true;
   });
 
-  // -------------------------------
-  // AGGREGATIONS
-  // -------------------------------
-  let grossUnits = 0;
-  let grossAmount = 0;
+  let grossUnits = 0, grossAmt = 0;
+  let cancelUnits = 0, cancelAmt = 0;
+  let returnUnits = 0, returnAmt = 0;
+  let finalUnits = 0, finalAmt = 0;
 
-  let cancelUnits = 0;
-  let cancelAmount = 0;
-
-  let returnUnits = 0;
-  let returnAmount = 0;
-
-  let finalUnits = 0;
-  let finalAmount = 0;
-
-  filtered.forEach(row => {
-    grossUnits += Number(row["Gross Units"] || 0);
-    grossAmount += Number(row["GMV"] || 0);
-
-    cancelUnits += Number(row["Cancellation Units"] || 0);
-    cancelAmount += Number(row["Cancellation Amount"] || 0);
-
-    returnUnits += Number(row["Return Units"] || 0);
-    returnAmount += Number(row["Return Amount"] || 0);
-
-    finalUnits += Number(row["Final Sale Units"] || 0);
-    finalAmount += Number(row["Final Sale Amount"] || 0);
+  rows.forEach(r => {
+    grossUnits += +r["Gross Units"] || 0;
+    grossAmt += +r["GMV"] || 0;
+    cancelUnits += +r["Cancellation Units"] || 0;
+    cancelAmt += +r["Cancellation Amount"] || 0;
+    returnUnits += +r["Return Units"] || 0;
+    returnAmt += +r["Return Amount"] || 0;
+    finalUnits += +r["Final Sale Units"] || 0;
+    finalAmt += +r["Final Sale Amount"] || 0;
   });
 
   const netUnits = grossUnits - cancelUnits - returnUnits;
 
-  // -------------------------------
-  // RENDER HELPERS
-  // -------------------------------
-  function renderItem(label, units, amount) {
+  const renderItem = (label, units, amount) => {
     const div = document.createElement("div");
     div.className = "summary-item";
     div.innerHTML = `
@@ -68,22 +46,10 @@ window.renderSummaryGMV = function () {
       <div class="label">₹ ${amount.toLocaleString()}</div>
     `;
     container.appendChild(div);
-  }
+  };
 
-  // -------------------------------
-  // RENDER SUMMARY
-  // -------------------------------
-  renderItem("Gross Sale", grossUnits, grossAmount);
-  renderItem("Cancel", cancelUnits, cancelAmount);
-  renderItem("Return", returnUnits, returnAmount);
-  renderItem("Net Sales", netUnits, finalAmount);
-};
-
-// =======================================
-// AUTO HOOK INTO ROUTE RENDER
-// =======================================
-const _oldRenderRouteGMV = window.renderActiveRoute;
-window.renderActiveRoute = function () {
-  if (_oldRenderRouteGMV) _oldRenderRouteGMV();
-  window.renderSummaryGMV();
+  renderItem("Gross Sale", grossUnits, grossAmt);
+  renderItem("Cancel", cancelUnits, cancelAmt);
+  renderItem("Return", returnUnits, returnAmt);
+  renderItem("Net Sales", netUnits, finalAmt);
 };
