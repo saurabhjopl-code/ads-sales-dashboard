@@ -19,7 +19,7 @@ window.APP_STATE = {
 };
 
 // ================================
-// CSV URL CONFIG (LOCKED)
+// CSV URL CONFIG
 // ================================
 const CSV_URLS = {
   CDR: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd_uFyNN_LsA0hZ4EuRYflMnzY-NwSAn9sRhvPbbeRrRkAe5d07tIEJ_gilGwvR5-H1l3jjTOdjq6j/pub?gid=0&single=true&output=csv",
@@ -31,7 +31,7 @@ const CSV_URLS = {
 };
 
 // ================================
-// CSV PARSER (SAFE, GENERIC)
+// CSV PARSER
 // ================================
 function parseCSV(csvText) {
   const lines = csvText.trim().split("\n");
@@ -48,12 +48,10 @@ function parseCSV(csvText) {
 }
 
 // ================================
-// LOAD ALL DATA
+// LOAD DATA
 // ================================
 async function loadAllData() {
-  const keys = Object.keys(CSV_URLS);
-
-  for (let key of keys) {
+  for (const key of Object.keys(CSV_URLS)) {
     const res = await fetch(CSV_URLS[key]);
     const text = await res.text();
     APP_STATE.data[key] = parseCSV(text);
@@ -61,56 +59,59 @@ async function loadAllData() {
 
   initACCList();
   initNavigation();
-  renderActiveRoute();
+  renderAll();
 }
 
 // ================================
-// ACC HANDLING
+// ACC
 // ================================
 function initACCList() {
   const accSet = new Set();
-
-  Object.values(APP_STATE.data).forEach(dataset => {
-    dataset.forEach(row => {
-      if (row.ACC) accSet.add(row.ACC);
-    });
+  Object.values(APP_STATE.data).forEach(arr => {
+    arr.forEach(r => r.ACC && accSet.add(r.ACC));
   });
 
-  APP_STATE.accList = Array.from(accSet);
+  APP_STATE.accList = [...accSet];
   APP_STATE.activeACC = APP_STATE.accList[0] || null;
 
   window.renderACCTabs();
 }
 
 // ================================
-// ROUTING
+// NAVIGATION
 // ================================
 function initNavigation() {
   document.querySelectorAll(".nav-item").forEach(item => {
-    item.addEventListener("click", () => {
-      document.querySelectorAll(".nav-item").forEach(i => i.classList.remove("active"));
+    item.onclick = () => {
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
       item.classList.add("active");
-
       APP_STATE.activeRoute = item.dataset.route;
       document.getElementById("reportTitle").innerText = item.innerText;
-
-      renderActiveRoute();
-    });
+      renderAll();
+    };
   });
 }
 
-function renderActiveRoute() {
-  const route = APP_STATE.activeRoute;
+// ================================
+// MASTER RENDER
+// ================================
+function renderAll() {
+  // Summaries
+  window.renderSummaryGMV?.();
+  window.renderSummaryCTR?.();
+  window.renderSummaryAds?.();
+  window.renderSummaryEfficiency?.();
 
-  if (route === "sales-health") window.renderSalesHealth();
-  if (route === "spend-vs-sales") window.renderSpendVsSales();
-  if (route === "campaign-performance") window.renderCampaignPerformance();
-  if (route === "keyword-performance") window.renderKeywordPerformance();
-  if (route === "placement-performance") window.renderPlacementPerformance();
-  if (route === "sku-performance") window.renderSkuPerformance();
+  // Reports
+  if (APP_STATE.activeRoute === "sales-health") window.renderSalesHealth?.();
+  if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
+  if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
+  if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
+  if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
+  if (APP_STATE.activeRoute === "sku-performance") window.renderSkuPerformance?.();
 }
 
 // ================================
-// INIT APP
+// INIT
 // ================================
 document.addEventListener("DOMContentLoaded", loadAllData);
