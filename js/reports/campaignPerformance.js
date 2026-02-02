@@ -1,5 +1,5 @@
 // =======================================
-// REPORT: Campaign Performance – V1.2
+// REPORT: Campaign Performance – V1.2+
 // Source: CDR (Campaign Level)
 // =======================================
 
@@ -16,9 +16,6 @@ window.renderCampaignPerformance = function () {
   const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
   const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
 
-  // -------------------------------
-  // Date Parser (Locked Utility)
-  // -------------------------------
   function parseDate(value) {
     if (!value) return null;
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
@@ -59,8 +56,10 @@ window.renderCampaignPerformance = function () {
     map[id].revenue += +r["Total Revenue (Rs.)"] || 0;
   });
 
+  const campaigns = Object.values(map);
+
   // -------------------------------
-  // BUILD TABLE
+  // BUILD TABLE (UNCHANGED LOGIC)
   // -------------------------------
   const table = document.createElement("table");
   table.innerHTML = `
@@ -84,7 +83,7 @@ window.renderCampaignPerformance = function () {
 
   const tbody = table.querySelector("tbody");
 
-  Object.values(map).forEach(c => {
+  campaigns.forEach(c => {
     const ctr = c.views > 0 ? (c.clicks / c.views) * 100 : 0;
     const roi = c.spend > 0 ? c.revenue / c.spend : 0;
     const acos = c.revenue > 0 ? (c.spend / c.revenue) * 100 : 0;
@@ -118,4 +117,82 @@ window.renderCampaignPerformance = function () {
   });
 
   tableSection.appendChild(table);
+
+  // -------------------------------
+  // CHART DATA
+  // -------------------------------
+  const labels = campaigns.map(c => c.name);
+  const spendData = campaigns.map(c => c.spend);
+  const revenueData = campaigns.map(c => c.revenue);
+  const roiData = campaigns.map(c =>
+    c.spend > 0 ? c.revenue / c.spend : 0
+  );
+
+  // -------------------------------
+  // CHART 1: Spend vs Revenue
+  // -------------------------------
+  const canvas1 = document.createElement("canvas");
+  chartsSection.appendChild(canvas1);
+
+  new Chart(canvas1.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Ad Spend",
+          data: spendData
+        },
+        {
+          label: "Revenue",
+          data: revenueData
+        }
+      ]
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: {
+        legend: { position: "top" }
+      },
+      scales: {
+        x: {
+          ticks: {
+            callback: value => "₹ " + value.toLocaleString()
+          }
+        }
+      }
+    }
+  });
+
+  // -------------------------------
+  // CHART 2: ROI by Campaign
+  // -------------------------------
+  const canvas2 = document.createElement("canvas");
+  canvas2.style.marginTop = "32px";
+  chartsSection.appendChild(canvas2);
+
+  new Chart(canvas2.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "ROI",
+          data: roiData
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false }
+      },
+      scales: {
+        y: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
 };
