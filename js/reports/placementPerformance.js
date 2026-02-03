@@ -1,6 +1,6 @@
 // =======================================
-// REPORT: Placement Performance (Expandable)
-// Version: V3.7 (Built on V3.6 Reset)
+// REPORT: Placement Performance + Efficiency Chart
+// Version: V3.8 (Built on V3.6 Reset)
 // Source: PPR
 // =======================================
 
@@ -8,20 +8,33 @@ window.renderPlacementPerformance = function () {
   const tableSection = document.getElementById("tableSection");
   const chartsSection = document.getElementById("chartsSection");
 
-  if (!tableSection || !APP_STATE.activeACC) return;
+  if (!tableSection || !chartsSection || !APP_STATE.activeACC) return;
 
   tableSection.innerHTML = "";
   chartsSection.innerHTML = "";
 
   const acc = APP_STATE.activeACC;
 
+  const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
+  const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
+
+  function parseDate(v) {
+    if (!v) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v);
+    const p = v.includes("/") ? v.split("/") : v.split("-");
+    return new Date(p[2], p[1] - 1, p[0]);
+  }
+
   // ==================================================
-  // AGGREGATE: Placement -> Campaign
+  // AGGREGATE: Placement → Campaign
   // ==================================================
   const placementMap = {};
 
   APP_STATE.data.PPR.forEach(r => {
     if (r.ACC !== acc) return;
+
+    const d = parseDate(r["Date"] || r["Order Date"]);
+    if (!d || (start && d < start) || (end && d > end)) return;
 
     const placement = r["Placement Type"];
     const campaignId = r["Campaign ID"];
@@ -45,19 +58,19 @@ window.renderPlacementPerformance = function () {
       };
     }
 
-    const p = placementMap[placement].summary;
+    const s = placementMap[placement].summary;
 
-    p.views += +r["Views"] || 0;
-    p.clicks += +r["Clicks"] || 0;
-    p.spend += +r["Ad Spend"] || 0;
-    p.directUnits += +r["Direct Units Sold"] || 0;
-    p.indirectUnits += +r["Indirect Units Sold"] || 0;
-    p.directRevenue += +r["Direct Revenue"] || 0;
-    p.indirectRevenue += +r["Indirect Revenue"] || 0;
+    s.views += +r["Views"] || 0;
+    s.clicks += +r["Clicks"] || 0;
+    s.spend += +r["Ad Spend"] || 0;
+    s.directUnits += +r["Direct Units Sold"] || 0;
+    s.indirectUnits += +r["Indirect Units Sold"] || 0;
+    s.directRevenue += +r["Direct Revenue"] || 0;
+    s.indirectRevenue += +r["Indirect Revenue"] || 0;
 
     if (+r["Average CPC"]) {
-      p.totalCPC += +r["Average CPC"];
-      p.cpcCount += 1;
+      s.totalCPC += +r["Average CPC"];
+      s.cpcCount += 1;
     }
 
     if (!placementMap[placement].campaigns[campaignId]) {
@@ -92,6 +105,62 @@ window.renderPlacementPerformance = function () {
   });
 
   // ==================================================
+  // PLACEMENT EFFICIENCY BUBBLE CHART
+  // ==================================================
+  const canvas = document.createElement("canvas");
+  chartsSection.appendChild(canvas);
+
+  const bubbleData = Object.values(placementMap).map(p => {
+    const s = p.summary;
+    const revenue = s.directRevenue + s.indirectRevenue;
+    const roi = s.spend ? revenue / s.spend : 0;
+
+    return {
+      label: p.placement,
+      x: s.spend,
+      y: roi,
+      r: Math.max(6, Math.sqrt(revenue) / 8)
+    };
+  });
+
+  new Chart(canvas, {
+    type: "bubble",
+    data: {
+      datasets: [{
+        label: "Placement Efficiency",
+        data: bubbleData
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label(ctx) {
+              const v = ctx.raw;
+              return [
+                `Placement: ${v.label}`,
+                `Spend: ₹ ${v.x.toLocaleString()}`,
+                `ROI: ${v.y.toFixed(2)}`
+              ];
+            }
+          }
+        },
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          title: { display: true, text: "Ad Spend (₹)" }
+        },
+        y: {
+          title: { display: true, text: "ROI" },
+          beginAtZero: true
+        }
+      }
+    }
+  });
+
+  // ==================================================
   // TABLE STRUCTURE
   // ==================================================
   const table = document.createElement("table");
@@ -115,68 +184,54 @@ window.renderPlacementPerformance = function () {
 
   const tbody = table.querySelector("tbody");
 
-  // ==================================================
-  // HELPERS
-  // ==================================================
-  function calcRowMetrics(obj) {
-    const ctr = obj.views ? (obj.clicks / obj.views) * 100 : 0;
-    const avgCPC = obj.cpcCount ? obj.totalCPC / obj.cpcCount : 0;
-    const totalUnits = obj.directUnits + obj.indirectUnits;
-    const totalRevenue = obj.directRevenue + obj.indirectRevenue;
-    const roi = obj.spend ? totalRevenue / obj.spend : 0;
+  function metrics(o) {
+    const ctr = o.views ? (o.clicks / o.views) * 100 : 0;
+    const avgCPC = o.cpcCount ? o.totalCPC / o.cpcCount : 0;
+    const units = o.directUnits + o.indirectUnits;
+    const revenue = o.directRevenue + o.indirectRevenue;
+    const roi = o.spend ? revenue / o.spend : 0;
 
     let action = "OPTIMIZE";
     let cls = "trend-amber";
 
-    if (roi >= 4) {
-      action = "SCALE";
-      cls = "trend-green";
-    } else if (roi < 2) {
-      action = "PAUSE";
-      cls = "trend-red";
-    }
+    if (roi >= 4) { action = "SCALE"; cls = "trend-green"; }
+    else if (roi < 2) { action = "PAUSE"; cls = "trend-red"; }
 
-    return { ctr, avgCPC, totalUnits, totalRevenue, roi, action, cls };
+    return { ctr, avgCPC, units, revenue, roi, action, cls };
   }
 
-  // ==================================================
-  // RENDER ROWS
-  // ==================================================
   Object.values(placementMap).forEach(p => {
-    const s = p.summary;
-    const m = calcRowMetrics(s);
-    const rowId = `placement-${p.placement.replace(/\s+/g, "-")}`;
+    const m = metrics(p.summary);
+    const rowId = `pl-${p.placement.replace(/\s+/g, "-")}`;
 
-    // Parent Row (Placement)
     tbody.innerHTML += `
-      <tr class="placement-row" data-target="${rowId}" style="font-weight:700; cursor:pointer;">
+      <tr class="placement-row" data-target="${rowId}" style="cursor:pointer;font-weight:700">
         <td>▶ ${p.placement}</td>
-        <td>${s.views.toLocaleString()}</td>
-        <td>${s.clicks.toLocaleString()}</td>
+        <td>${p.summary.views.toLocaleString()}</td>
+        <td>${p.summary.clicks.toLocaleString()}</td>
         <td>${m.ctr.toFixed(2)}%</td>
         <td>₹ ${m.avgCPC.toFixed(2)}</td>
-        <td>₹ ${s.spend.toLocaleString()}</td>
-        <td>${m.totalUnits}</td>
-        <td>₹ ${m.totalRevenue.toLocaleString()}</td>
+        <td>₹ ${p.summary.spend.toLocaleString()}</td>
+        <td>${m.units}</td>
+        <td>₹ ${m.revenue.toLocaleString()}</td>
         <td>${m.roi.toFixed(2)}</td>
         <td class="${m.cls}">${m.action}</td>
       </tr>
     `;
 
-    // Child Rows (Campaigns)
     Object.values(p.campaigns).forEach(c => {
-      const cm = calcRowMetrics(c);
+      const cm = metrics(c);
 
       tbody.innerHTML += `
-        <tr class="campaign-row ${rowId}" style="display:none;">
-          <td style="padding-left:30px;">${c.campaignId}</td>
+        <tr class="campaign-row ${rowId}" style="display:none">
+          <td style="padding-left:30px">${c.campaignId}</td>
           <td>${c.views.toLocaleString()}</td>
           <td>${c.clicks.toLocaleString()}</td>
           <td>${cm.ctr.toFixed(2)}%</td>
           <td>₹ ${cm.avgCPC.toFixed(2)}</td>
           <td>₹ ${c.spend.toLocaleString()}</td>
-          <td>${cm.totalUnits}</td>
-          <td>₹ ${cm.totalRevenue.toLocaleString()}</td>
+          <td>${cm.units}</td>
+          <td>₹ ${cm.revenue.toLocaleString()}</td>
           <td>${cm.roi.toFixed(2)}</td>
           <td class="${cm.cls}">${cm.action}</td>
         </tr>
@@ -187,20 +242,20 @@ window.renderPlacementPerformance = function () {
   tableSection.appendChild(table);
 
   // ==================================================
-  // EXPAND / COLLAPSE LOGIC
+  // EXPAND / COLLAPSE
   // ==================================================
   table.querySelectorAll(".placement-row").forEach(row => {
     row.addEventListener("click", () => {
       const target = row.dataset.target;
-      const icon = row.querySelector("td");
+      const cell = row.querySelector("td");
 
       table.querySelectorAll(`.${target}`).forEach(r => {
         r.style.display = r.style.display === "none" ? "table-row" : "none";
       });
 
-      icon.innerHTML = icon.innerHTML.startsWith("▶")
-        ? icon.innerHTML.replace("▶", "▼")
-        : icon.innerHTML.replace("▼", "▶");
+      cell.innerHTML = cell.innerHTML.startsWith("▶")
+        ? cell.innerHTML.replace("▶", "▼")
+        : cell.innerHTML.replace("▼", "▶");
     });
   });
 };
