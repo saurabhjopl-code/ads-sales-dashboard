@@ -1,5 +1,6 @@
 // =======================================
-// REPORT: Placement Performance – V3.1
+// REPORT: Placement Performance (Expandable)
+// Version: V3.7 (Built on V3.6 Reset)
 // Source: PPR
 // =======================================
 
@@ -14,20 +15,54 @@ window.renderPlacementPerformance = function () {
 
   const acc = APP_STATE.activeACC;
 
-  // -------------------------------
-  // AGGREGATE BY PLACEMENT
-  // -------------------------------
-  const map = {};
+  // ==================================================
+  // AGGREGATE: Placement -> Campaign
+  // ==================================================
+  const placementMap = {};
 
   APP_STATE.data.PPR.forEach(r => {
     if (r.ACC !== acc) return;
 
     const placement = r["Placement Type"];
-    if (!placement) return;
+    const campaignId = r["Campaign ID"];
+    if (!placement || !campaignId) return;
 
-    if (!map[placement]) {
-      map[placement] = {
+    if (!placementMap[placement]) {
+      placementMap[placement] = {
         placement,
+        summary: {
+          views: 0,
+          clicks: 0,
+          spend: 0,
+          directUnits: 0,
+          indirectUnits: 0,
+          directRevenue: 0,
+          indirectRevenue: 0,
+          totalCPC: 0,
+          cpcCount: 0
+        },
+        campaigns: {}
+      };
+    }
+
+    const p = placementMap[placement].summary;
+
+    p.views += +r["Views"] || 0;
+    p.clicks += +r["Clicks"] || 0;
+    p.spend += +r["Ad Spend"] || 0;
+    p.directUnits += +r["Direct Units Sold"] || 0;
+    p.indirectUnits += +r["Indirect Units Sold"] || 0;
+    p.directRevenue += +r["Direct Revenue"] || 0;
+    p.indirectRevenue += +r["Indirect Revenue"] || 0;
+
+    if (+r["Average CPC"]) {
+      p.totalCPC += +r["Average CPC"];
+      p.cpcCount += 1;
+    }
+
+    if (!placementMap[placement].campaigns[campaignId]) {
+      placementMap[placement].campaigns[campaignId] = {
+        campaignId,
         views: 0,
         clicks: 0,
         spend: 0,
@@ -40,35 +75,35 @@ window.renderPlacementPerformance = function () {
       };
     }
 
-    map[placement].views += +r["Views"] || 0;
-    map[placement].clicks += +r["Clicks"] || 0;
-    map[placement].spend += +r["Ad Spend"] || 0;
-    map[placement].directUnits += +r["Direct Units Sold"] || 0;
-    map[placement].indirectUnits += +r["Indirect Units Sold"] || 0;
-    map[placement].directRevenue += +r["Direct Revenue"] || 0;
-    map[placement].indirectRevenue += +r["Indirect Revenue"] || 0;
+    const c = placementMap[placement].campaigns[campaignId];
+
+    c.views += +r["Views"] || 0;
+    c.clicks += +r["Clicks"] || 0;
+    c.spend += +r["Ad Spend"] || 0;
+    c.directUnits += +r["Direct Units Sold"] || 0;
+    c.indirectUnits += +r["Indirect Units Sold"] || 0;
+    c.directRevenue += +r["Direct Revenue"] || 0;
+    c.indirectRevenue += +r["Indirect Revenue"] || 0;
 
     if (+r["Average CPC"]) {
-      map[placement].totalCPC += +r["Average CPC"];
-      map[placement].cpcCount += 1;
+      c.totalCPC += +r["Average CPC"];
+      c.cpcCount += 1;
     }
   });
 
-  // -------------------------------
-  // BUILD TABLE
-  // -------------------------------
+  // ==================================================
+  // TABLE STRUCTURE
+  // ==================================================
   const table = document.createElement("table");
   table.innerHTML = `
     <thead>
       <tr>
-        <th>Placement</th>
+        <th>Placement / Campaign</th>
         <th>Views</th>
         <th>Clicks</th>
         <th>CTR %</th>
         <th>Avg CPC</th>
         <th>Ad Spend</th>
-        <th>Direct Units</th>
-        <th>Indirect Units</th>
         <th>Total Units</th>
         <th>Total Revenue</th>
         <th>ROI</th>
@@ -80,12 +115,15 @@ window.renderPlacementPerformance = function () {
 
   const tbody = table.querySelector("tbody");
 
-  Object.values(map).forEach(p => {
-    const ctr = p.views > 0 ? (p.clicks / p.views) * 100 : 0;
-    const avgCPC = p.cpcCount > 0 ? p.totalCPC / p.cpcCount : 0;
-    const totalUnits = p.directUnits + p.indirectUnits;
-    const totalRevenue = p.directRevenue + p.indirectRevenue;
-    const roi = p.spend > 0 ? totalRevenue / p.spend : 0;
+  // ==================================================
+  // HELPERS
+  // ==================================================
+  function calcRowMetrics(obj) {
+    const ctr = obj.views ? (obj.clicks / obj.views) * 100 : 0;
+    const avgCPC = obj.cpcCount ? obj.totalCPC / obj.cpcCount : 0;
+    const totalUnits = obj.directUnits + obj.indirectUnits;
+    const totalRevenue = obj.directRevenue + obj.indirectRevenue;
+    const roi = obj.spend ? totalRevenue / obj.spend : 0;
 
     let action = "OPTIMIZE";
     let cls = "trend-amber";
@@ -98,23 +136,71 @@ window.renderPlacementPerformance = function () {
       cls = "trend-red";
     }
 
+    return { ctr, avgCPC, totalUnits, totalRevenue, roi, action, cls };
+  }
+
+  // ==================================================
+  // RENDER ROWS
+  // ==================================================
+  Object.values(placementMap).forEach(p => {
+    const s = p.summary;
+    const m = calcRowMetrics(s);
+    const rowId = `placement-${p.placement.replace(/\s+/g, "-")}`;
+
+    // Parent Row (Placement)
     tbody.innerHTML += `
-      <tr>
-        <td>${p.placement}</td>
-        <td>${p.views.toLocaleString()}</td>
-        <td>${p.clicks.toLocaleString()}</td>
-        <td>${ctr.toFixed(2)}%</td>
-        <td>₹ ${avgCPC.toFixed(2)}</td>
-        <td>₹ ${p.spend.toLocaleString()}</td>
-        <td>${p.directUnits}</td>
-        <td>${p.indirectUnits}</td>
-        <td>${totalUnits}</td>
-        <td>₹ ${totalRevenue.toLocaleString()}</td>
-        <td>${roi.toFixed(2)}</td>
-        <td class="${cls}" style="font-weight:700">${action}</td>
+      <tr class="placement-row" data-target="${rowId}" style="font-weight:700; cursor:pointer;">
+        <td>▶ ${p.placement}</td>
+        <td>${s.views.toLocaleString()}</td>
+        <td>${s.clicks.toLocaleString()}</td>
+        <td>${m.ctr.toFixed(2)}%</td>
+        <td>₹ ${m.avgCPC.toFixed(2)}</td>
+        <td>₹ ${s.spend.toLocaleString()}</td>
+        <td>${m.totalUnits}</td>
+        <td>₹ ${m.totalRevenue.toLocaleString()}</td>
+        <td>${m.roi.toFixed(2)}</td>
+        <td class="${m.cls}">${m.action}</td>
       </tr>
     `;
+
+    // Child Rows (Campaigns)
+    Object.values(p.campaigns).forEach(c => {
+      const cm = calcRowMetrics(c);
+
+      tbody.innerHTML += `
+        <tr class="campaign-row ${rowId}" style="display:none;">
+          <td style="padding-left:30px;">${c.campaignId}</td>
+          <td>${c.views.toLocaleString()}</td>
+          <td>${c.clicks.toLocaleString()}</td>
+          <td>${cm.ctr.toFixed(2)}%</td>
+          <td>₹ ${cm.avgCPC.toFixed(2)}</td>
+          <td>₹ ${c.spend.toLocaleString()}</td>
+          <td>${cm.totalUnits}</td>
+          <td>₹ ${cm.totalRevenue.toLocaleString()}</td>
+          <td>${cm.roi.toFixed(2)}</td>
+          <td class="${cm.cls}">${cm.action}</td>
+        </tr>
+      `;
+    });
   });
 
   tableSection.appendChild(table);
+
+  // ==================================================
+  // EXPAND / COLLAPSE LOGIC
+  // ==================================================
+  table.querySelectorAll(".placement-row").forEach(row => {
+    row.addEventListener("click", () => {
+      const target = row.dataset.target;
+      const icon = row.querySelector("td");
+
+      table.querySelectorAll(`.${target}`).forEach(r => {
+        r.style.display = r.style.display === "none" ? "table-row" : "none";
+      });
+
+      icon.innerHTML = icon.innerHTML.startsWith("▶")
+        ? icon.innerHTML.replace("▶", "▼")
+        : icon.innerHTML.replace("▼", "▶");
+    });
+  });
 };
