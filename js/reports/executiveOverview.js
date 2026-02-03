@@ -1,9 +1,9 @@
 // =======================================
 // REPORT: Executive Overview
-// TAB 1: GMV BASED OVERVIEW (LOCKED)
-// TAB 2: CTR BASED OVERVIEW (CORRECTED)
+// TAB 1: GMV BASED OVERVIEW (LOCKED V3.3)
+// TAB 2: CTR BASED OVERVIEW (FINAL LOGIC)
 // PLA Metrics derived ONLY from CDR
-// Version: V3.4.1
+// Version: V3.4.3
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -73,7 +73,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // 2️⃣ CTR BASED AGGREGATION (FIXED)
+  // 2️⃣ CTR BASED AGGREGATION (FINAL)
   // ==================================================
   const ctrMap = {};
 
@@ -98,18 +98,19 @@ window.renderExecutiveOverview = function () {
 
     const qty = +r["Item Quantity"] || 0;
     const amt = +r["Price before discount"] || 0;
+    const subType = (r["Event Sub Type"] || "").trim();
 
-    if (r["Event Type"] === "SALE") {
+    if (subType === "Sale") {
       ctrMap[acc].saleUnits += qty;
       ctrMap[acc].saleAmount += amt;
     }
 
-    if (r["Event Type"] === "RETURN") {
+    if (subType === "Return") {
       ctrMap[acc].returnUnits += qty;
       ctrMap[acc].returnAmount += amt;
     }
 
-    if (r["Event Type"] === "CANCEL") {
+    if (subType === "Cancellation") {
       ctrMap[acc].cancelUnits += qty;
       ctrMap[acc].cancelAmount += amt;
     }
