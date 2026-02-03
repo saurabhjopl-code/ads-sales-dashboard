@@ -59,6 +59,10 @@ async function loadAllData() {
 
   initACCList();
   initNavigation();
+
+  // 🔥 IMPORTANT: notify filters that data is ready
+  document.dispatchEvent(new Event("dataLoaded"));
+
   renderAll();
 }
 
@@ -74,7 +78,7 @@ function initACCList() {
   APP_STATE.accList = [...accSet];
   APP_STATE.activeACC = APP_STATE.accList[0] || null;
 
-  window.renderACCTabs();
+  window.renderACCTabs?.();
 }
 
 // ================================
@@ -83,9 +87,7 @@ function initACCList() {
 function initNavigation() {
   document.querySelectorAll(".nav-item").forEach(item => {
     item.onclick = () => {
-      document.querySelectorAll(".nav-item").forEach(n =>
-        n.classList.remove("active")
-      );
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
       item.classList.add("active");
       APP_STATE.activeRoute = item.dataset.route;
       document.getElementById("reportTitle").innerText = item.innerText;
@@ -95,33 +97,19 @@ function initNavigation() {
 }
 
 // ================================
-// MASTER RENDER (V3.2 + EO)
+// MASTER RENDER
 // ================================
 function renderAll() {
-  // Summaries
   window.renderSummaryGMV?.();
   window.renderSummaryCTR?.();
   window.renderSummaryAds?.();
   window.renderSummaryEfficiency?.();
 
-  // Reports
-  if (APP_STATE.activeRoute === "executive-overview")
-    window.renderExecutiveOverview?.(); // ✅ ONLY ADDITION
-
-  if (APP_STATE.activeRoute === "sales-health")
-    window.renderSalesHealth?.();
-
-  if (APP_STATE.activeRoute === "spend-vs-sales")
-    window.renderSpendVsSales?.();
-
-  if (APP_STATE.activeRoute === "campaign-performance")
-    window.renderCampaignPerformance?.();
-
-  if (APP_STATE.activeRoute === "keyword-performance")
-    window.renderKeywordPerformance?.();
-
-  if (APP_STATE.activeRoute === "placement-performance")
-    window.renderPlacementPerformance?.();
+  if (APP_STATE.activeRoute === "sales-health") window.renderSalesHealth?.();
+  if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
+  if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
+  if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
+  if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
 }
 
 // ================================
