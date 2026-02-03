@@ -15,6 +15,8 @@ window.APP_STATE = {
   startDate: null,
   endDate: null,
   week: null,
+
+  // 🔒 DEFAULT LANDING ROUTE
   activeRoute: "executive-overview"
 };
 
@@ -60,9 +62,10 @@ async function loadAllData() {
   initACCList();
   initNavigation();
 
-  // 🔔 Notify filters (Week builder)
+  // Notify week filter builder
   document.dispatchEvent(new Event("dataLoaded"));
 
+  // Initial render
   renderAll();
 }
 
@@ -87,14 +90,26 @@ function initACCList() {
 function initNavigation() {
   document.querySelectorAll(".nav-item").forEach(item => {
     item.onclick = () => {
-      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-      item.classList.add("active");
+      document.querySelectorAll(".nav-item").forEach(n =>
+        n.classList.remove("active")
+      );
 
+      item.classList.add("active");
       APP_STATE.activeRoute = item.dataset.route;
       document.getElementById("reportTitle").innerText = item.innerText;
 
       renderAll();
     };
+  });
+
+  // 🔒 SET ACTIVE STATE ON LOAD
+  document.querySelectorAll(".nav-item").forEach(item => {
+    if (item.dataset.route === APP_STATE.activeRoute) {
+      item.classList.add("active");
+      document.getElementById("reportTitle").innerText = item.innerText;
+    } else {
+      item.classList.remove("active");
+    }
   });
 }
 
@@ -102,13 +117,13 @@ function initNavigation() {
 // MASTER RENDER
 // ================================
 function renderAll() {
-  // ---- Summaries (always render)
+  // Summaries always render
   window.renderSummaryGMV?.();
   window.renderSummaryCTR?.();
   window.renderSummaryAds?.();
   window.renderSummaryEfficiency?.();
 
-  // ---- Reports (route-based)
+  // Route-based reports
   if (APP_STATE.activeRoute === "executive-overview") {
     window.renderExecutiveOverview?.();
     return;
