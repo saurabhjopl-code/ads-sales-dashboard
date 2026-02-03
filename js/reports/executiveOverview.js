@@ -1,7 +1,8 @@
 // =======================================
 // REPORT: Executive Overview
 // TAB 1: GMV BASED OVERVIEW (POPULATED)
-// Version: V3.2+
+// PLA Metrics derived ONLY from CDR
+// Version: V3.3 (GMV EXEC OVERVIEW)
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -20,7 +21,6 @@ window.renderExecutiveOverview = function () {
     <button class="tab active" data-tab="gmv">GMV BASED OVERVIEW</button>
     <button class="tab" data-tab="ctr">TRANSACTION (CTR) BASED OVERVIEW</button>
   `;
-
   tableSection.appendChild(tabs);
 
   const content = document.createElement("div");
@@ -40,7 +40,7 @@ window.renderExecutiveOverview = function () {
   }
 
   // -------------------------------
-  // GMV AGGREGATION (ACC-WISE)
+  // ACC MAP (GMV BASE)
   // -------------------------------
   const accMap = {};
 
@@ -75,7 +75,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // -------------------------------
-  // PLA SPEND (CDR)
+  // PLA METRICS FROM CDR ONLY
   // -------------------------------
   APP_STATE.data.CDR.forEach(r => {
     const acc = r.ACC;
@@ -85,19 +85,7 @@ window.renderExecutiveOverview = function () {
     if (!d || (start && d < start) || (end && d > end)) return;
 
     accMap[acc].plaSpend += +r["Ad Spend"] || 0;
-  });
-
-  // -------------------------------
-  // PLA UNITS & REVENUE (CFR)
-  // -------------------------------
-  APP_STATE.data.CFR.forEach(r => {
-    const acc = r.ACC;
-    if (!acc || !accMap[acc]) return;
-
-    accMap[acc].plaUnits +=
-      (+r["Direct Units Sold"] || 0) +
-      (+r["Indirect Units Sold"] || 0);
-
+    accMap[acc].plaUnits += +r["Total converted units"] || 0;
     accMap[acc].plaRevenue += +r["Total Revenue (Rs.)"] || 0;
   });
 
