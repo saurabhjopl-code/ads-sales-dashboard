@@ -93,7 +93,7 @@ function initNavigation() {
 }
 
 // ================================
-// MASTER RENDER
+// MASTER RENDER (V3.2 STABLE)
 // ================================
 function renderAll() {
   // Summaries
@@ -108,7 +108,6 @@ function renderAll() {
   if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
   if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
   if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
-  if (APP_STATE.activeRoute === "sku-performance") window.renderSkuPerformance?.();
 }
 
 // ================================
