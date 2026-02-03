@@ -1,5 +1,6 @@
 // =======================================
-// REPORT: Spend vs Sales (GMV Based) – V1.0
+// REPORT: Spend vs Sales (GMV Based) – V1.1
+// Chart simplified: Actual Ads Spend vs Fixed Ads (3%)
 // =======================================
 
 window.renderSpendVsSales = function () {
@@ -67,7 +68,6 @@ window.renderSpendVsSales = function () {
   const dates = Object.keys(daily).sort();
 
   const chartDates = [];
-  const netSalesArr = [];
   const adsSpendArr = [];
   const fixedAdsArr = [];
 
@@ -110,7 +110,6 @@ window.renderSpendVsSales = function () {
     totalFixedAds += fixedAds;
 
     chartDates.push(date);
-    netSalesArr.push(r.netSales);
     adsSpendArr.push(r.adsSpend);
     fixedAdsArr.push(fixedAds);
 
@@ -148,7 +147,7 @@ window.renderSpendVsSales = function () {
   tableSection.appendChild(table);
 
   // -------------------------------
-  // CHART
+  // CHART (SIMPLIFIED)
   // -------------------------------
   const canvas = document.createElement("canvas");
   chartsSection.appendChild(canvas);
@@ -158,12 +157,6 @@ window.renderSpendVsSales = function () {
     data: {
       labels: chartDates,
       datasets: [
-        {
-          label: "Net Sales (GMV)",
-          data: netSalesArr,
-          borderWidth: 2,
-          tension: 0.3
-        },
         {
           label: "Actual Ads Spend",
           data: adsSpendArr,
