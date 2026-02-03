@@ -17,26 +17,25 @@
 
 <body>
 
-  <!-- =========================
-       BRAND HEADER
-  ========================== -->
+  <!-- BRAND HEADER -->
   <header class="brand-header">
     <div class="brand-left">
       <img src="assets/logo.png" alt="Rajnandini Fashion" />
     </div>
-
-    <div class="brand-center"><h1>
-      Flipkart Ads & Sales Report</h1>
+    <div class="brand-center">
+      Flipkart Ads & Sales Report
     </div>
-
     <div class="brand-right"></div>
   </header>
 
-  <!-- =========================
-       FILTER HEADER
-  ========================== -->
+  <!-- FILTER HEADER -->
   <header class="top-header">
     <div class="date-filters">
+
+      <label>
+        Month
+        <select id="monthSelector"></select>
+      </label>
 
       <label>
         Date Range
@@ -67,7 +66,6 @@
     <aside class="sidebar">
       <nav>
         <ul>
-
           <li class="nav-section">Dashboard</li>
           <li data-route="executive-overview" class="nav-item">
             Executive Overview
@@ -91,7 +89,6 @@
           <li data-route="placement-performance" class="nav-item">
             Placement Performance
           </li>
-
         </ul>
       </nav>
     </aside>
@@ -100,27 +97,22 @@
     <main class="main-content">
 
       <section class="summaries">
-
         <div class="summary-card" id="summary-gmv">
           <h3>Sales Performance Snapshot (GMV)</h3>
           <div class="summary-grid"></div>
         </div>
-
         <div class="summary-card" id="summary-ctr">
           <h3>Sales Performance Snapshot (Transactions)</h3>
           <div class="summary-grid"></div>
         </div>
-
         <div class="summary-card" id="summary-ads">
           <h3>Advertising Performance Snapshot</h3>
           <div class="summary-grid"></div>
         </div>
-
         <div class="summary-card" id="summary-efficiency">
           <h3>Ads Efficiency & Budget Control</h3>
           <div class="summary-grid"></div>
         </div>
-
       </section>
 
       <section class="report-container">
@@ -132,7 +124,6 @@
     </main>
   </div>
 
-  <!-- FOOTER -->
   <footer class="app-footer">
     © Rajnandini Fashion India Limited
   </footer>
@@ -162,5 +153,3 @@
 
 </body>
 </html>
-
-
