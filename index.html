@@ -5,9 +5,7 @@
   <title>Ads & Sales Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- =========================
-       BASE STYLES
-  ========================== -->
+  <!-- Base Styles -->
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/sidebar.css" />
@@ -19,9 +17,7 @@
 
 <body>
 
-  <!-- =========================
-       HEADER (GLOBAL FILTERS)
-  ========================== -->
+  <!-- HEADER -->
   <header class="top-header">
     <div class="date-filters">
       <label>
@@ -36,28 +32,25 @@
           <option value="">All</option>
         </select>
       </label>
+
+      <button id="resetFiltersBtn">RESET</button>
     </div>
   </header>
 
-  <!-- =========================
-       ACC TABS
-  ========================== -->
-  <section class="acc-tabs" id="accTabs">
-    <!-- Dynamically generated -->
-  </section>
+  <!-- ACC TABS -->
+  <section class="acc-tabs" id="accTabs"></section>
 
-  <!-- =========================
-       MAIN LAYOUT
-  ========================== -->
   <div class="app-container">
 
-    <!-- =========================
-         SIDEBAR NAVIGATION
-    ========================== -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <nav>
         <ul>
           <li class="nav-section">Dashboard</li>
+
+          <li data-route="executive-overview" class="nav-item">
+            Executive Overview
+          </li>
 
           <li class="nav-section">Sales</li>
           <li data-route="sales-health" class="nav-item active">
@@ -81,90 +74,60 @@
       </nav>
     </aside>
 
-    <!-- =========================
-         MAIN CONTENT
-    ========================== -->
+    <!-- MAIN -->
     <main class="main-content">
 
-      <!-- =========================
-           SUMMARIES (TOP)
-      ========================== -->
+      <!-- SUMMARIES -->
       <section class="summaries">
-
-        <!-- Summary 1 -->
         <div class="summary-card" id="summary-gmv">
           <h3>Sales Performance Snapshot (GMV)</h3>
           <div class="summary-grid"></div>
         </div>
 
-        <!-- Summary 4 -->
         <div class="summary-card" id="summary-ctr">
           <h3>Sales Performance Snapshot (Transactions)</h3>
           <div class="summary-grid"></div>
         </div>
 
-        <!-- Summary 2 -->
         <div class="summary-card" id="summary-ads">
           <h3>Advertising Performance Snapshot</h3>
           <div class="summary-grid"></div>
         </div>
 
-        <!-- Summary 3 -->
         <div class="summary-card" id="summary-efficiency">
           <h3>Ads Efficiency & Budget Control</h3>
           <div class="summary-grid"></div>
         </div>
-
       </section>
 
-      <!-- =========================
-           REPORT CONTAINER
-      ========================== -->
+      <!-- REPORT -->
       <section class="report-container">
-
-        <!-- Page Title -->
         <h2 id="reportTitle">Sales Health</h2>
 
-        <!-- Charts -->
-        <div class="charts-section" id="chartsSection">
-          <!-- Charts injected by JS -->
-        </div>
-
-        <!-- Table -->
-        <div class="table-section" id="tableSection">
-          <!-- Table injected by JS -->
-        </div>
-
+        <div class="charts-section" id="chartsSection"></div>
+        <div class="table-section" id="tableSection"></div>
       </section>
 
     </main>
-
   </div>
 
-  <!-- =========================
-       LIBRARIES
-  ========================== -->
+  <!-- LIBS -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- =========================
-       CORE JS
-  ========================== -->
+  <!-- CORE -->
   <script src="js/core/accTabs.js"></script>
   <script src="js/core/dateFilter.js"></script>
   <script src="js/core/weekFilter.js"></script>
   <script src="js/core/router.js"></script>
 
-  <!-- =========================
-       SUMMARIES
-  ========================== -->
+  <!-- SUMMARIES -->
   <script src="js/summaries/summaryGMV.js"></script>
   <script src="js/summaries/summaryCTR.js"></script>
   <script src="js/summaries/summaryAds.js"></script>
   <script src="js/summaries/summaryEfficiency.js"></script>
 
-  <!-- =========================
-       REPORTS
-  ========================== -->
+  <!-- REPORTS -->
+  <script src="js/reports/executiveOverview.js"></script>
   <script src="js/reports/salesHealth.js"></script>
   <script src="js/reports/spendVsSales.js"></script>
   <script src="js/reports/campaignPerformance.js"></script>
