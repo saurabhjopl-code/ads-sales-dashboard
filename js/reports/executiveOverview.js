@@ -1,9 +1,9 @@
 // =======================================
 // REPORT: Executive Overview
 // TAB 1: GMV BASED OVERVIEW (LOCKED)
-// TAB 2: CTR BASED OVERVIEW (NEW)
+// TAB 2: CTR BASED OVERVIEW (CORRECTED)
 // PLA Metrics derived ONLY from CDR
-// Version: V3.4
+// Version: V3.4.1
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -41,7 +41,7 @@ window.renderExecutiveOverview = function () {
   }
 
   // ==================================================
-  // 1️⃣ GMV BASED AGGREGATION (LOCKED)
+  // 1️⃣ GMV BASED AGGREGATION (UNCHANGED)
   // ==================================================
   const gmvMap = {};
 
@@ -73,7 +73,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // 2️⃣ CTR BASED AGGREGATION
+  // 2️⃣ CTR BASED AGGREGATION (FIXED)
   // ==================================================
   const ctrMap = {};
 
@@ -87,11 +87,11 @@ window.renderExecutiveOverview = function () {
     if (!ctrMap[acc]) {
       ctrMap[acc] = {
         acc,
-        grossUnits: 0,
-        grossSale: 0,
+        saleUnits: 0,
+        saleAmount: 0,
         returnUnits: 0,
-        cancelUnits: 0,
         returnAmount: 0,
+        cancelUnits: 0,
         cancelAmount: 0
       };
     }
@@ -99,8 +99,10 @@ window.renderExecutiveOverview = function () {
     const qty = +r["Item Quantity"] || 0;
     const amt = +r["Price before discount"] || 0;
 
-    ctrMap[acc].grossUnits += qty;
-    ctrMap[acc].grossSale += amt;
+    if (r["Event Type"] === "SALE") {
+      ctrMap[acc].saleUnits += qty;
+      ctrMap[acc].saleAmount += amt;
+    }
 
     if (r["Event Type"] === "RETURN") {
       ctrMap[acc].returnUnits += qty;
@@ -126,11 +128,7 @@ window.renderExecutiveOverview = function () {
     if (!d || (start && d < start) || (end && d > end)) return;
 
     if (!plaMap[acc]) {
-      plaMap[acc] = {
-        spend: 0,
-        units: 0,
-        revenue: 0
-      };
+      plaMap[acc] = { spend: 0, units: 0, revenue: 0 };
     }
 
     plaMap[acc].spend += +r["Ad Spend"] || 0;
@@ -139,7 +137,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // TABLE RENDERER (SHARED)
+  // TABLE RENDERER
   // ==================================================
   function renderTable(map, type) {
     content.innerHTML = "";
@@ -173,31 +171,39 @@ window.renderExecutiveOverview = function () {
     Object.values(map).forEach(a => {
       const pla = plaMap[a.acc] || { spend: 0, units: 0, revenue: 0 };
 
-      const netUnits =
-        type === "gmv"
-          ? a.netUnits
-          : a.grossUnits - a.returnUnits - a.cancelUnits;
+      let grossUnits, grossSale, netUnits, netSale, returnUnits, cancelUnits;
 
-      const netSale =
-        type === "gmv"
-          ? a.netSale
-          : a.grossSale - a.returnAmount - a.cancelAmount;
+      if (type === "gmv") {
+        grossUnits = a.grossUnits;
+        grossSale = a.grossSale;
+        netUnits = a.netUnits;
+        netSale = a.netSale;
+        returnUnits = a.returnUnits;
+        cancelUnits = a.cancelUnits;
+      } else {
+        grossUnits = a.saleUnits;
+        grossSale = a.saleAmount;
+        returnUnits = a.returnUnits;
+        cancelUnits = a.cancelUnits;
+        netUnits = grossUnits - returnUnits - cancelUnits;
+        netSale = grossSale - a.returnAmount - a.cancelAmount;
+      }
 
-      const returnPct = a.grossUnits > 0 ? (a.returnUnits / a.grossUnits) * 100 : 0;
-      const cancelPct = a.grossUnits > 0 ? (a.cancelUnits / a.grossUnits) * 100 : 0;
+      const returnPct = grossUnits > 0 ? (returnUnits / grossUnits) * 100 : 0;
+      const cancelPct = grossUnits > 0 ? (cancelUnits / grossUnits) * 100 : 0;
       const asp = netUnits > 0 ? netSale / netUnits : 0;
 
       const actualPlaPct = netSale > 0 ? (pla.spend / netSale) * 100 : 0;
       const projectedPla = netSale * 0.03;
       const plaDiff = pla.spend - projectedPla;
-      const plaUnitPct = a.grossUnits > 0 ? (pla.units / a.grossUnits) * 100 : 0;
+      const plaUnitPct = grossUnits > 0 ? (pla.units / grossUnits) * 100 : 0;
       const roi = pla.spend > 0 ? pla.revenue / pla.spend : 0;
 
       tbody.innerHTML += `
         <tr>
           <td>${a.acc}</td>
-          <td>${a.grossUnits.toLocaleString()}</td>
-          <td>₹ ${a.grossSale.toLocaleString()}</td>
+          <td>${grossUnits.toLocaleString()}</td>
+          <td>₹ ${grossSale.toLocaleString()}</td>
           <td>${returnPct.toFixed(2)}%</td>
           <td>${cancelPct.toFixed(2)}%</td>
           <td>₹ ${netSale.toLocaleString()}</td>
@@ -226,12 +232,9 @@ window.renderExecutiveOverview = function () {
     tab.onclick = () => {
       tabs.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
       tab.classList.add("active");
-
-      if (tab.dataset.tab === "gmv") {
-        renderTable(gmvMap, "gmv");
-      } else {
-        renderTable(ctrMap, "ctr");
-      }
+      tab.dataset.tab === "gmv"
+        ? renderTable(gmvMap, "gmv")
+        : renderTable(ctrMap, "ctr");
     };
   });
 };
