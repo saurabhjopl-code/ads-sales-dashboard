@@ -1,12 +1,18 @@
 // =======================================
-// WEEK FILTER (GMV ONLY)
-// Monday → Sunday
-// Version: V1.1 (LOCKED)
+// WEEK FILTER – MONTH AWARE (GMV ONLY)
+// Version: V2.0 (V3.9)
 // =======================================
 
 (function () {
   const weekSelect = document.getElementById("weekSelector");
   if (!weekSelect) return;
+
+  function parseDate(value) {
+    if (!value) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
+    const p = value.includes("/") ? value.split("/") : value.split("-");
+    return new Date(p[2], p[1] - 1, p[0]);
+  }
 
   function getMonday(date) {
     const d = new Date(date);
@@ -16,49 +22,31 @@
   }
 
   function format(d) {
-    return d.toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short"
-    });
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
   }
 
   function toISO(d) {
     return d.toISOString().split("T")[0];
   }
 
-  function parseDate(value) {
-    if (!value) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
-    const p = value.includes("/") ? value.split("/") : value.split("-");
-    return new Date(p[2], p[1] - 1, p[0]);
-  }
-
   function buildWeeks() {
-    const dates = [];
+    if (!APP_STATE.startDate || !APP_STATE.endDate) return;
 
-    // 🔒 ONLY GMV DATA
-    (APP_STATE.data.GMV || []).forEach(r => {
-      const d = parseDate(r["Order Date"]);
-      if (d && !isNaN(d)) dates.push(d);
-    });
+    const start = new Date(APP_STATE.startDate);
+    const end = new Date(APP_STATE.endDate);
 
-    if (!dates.length) return;
-
-    const minDate = new Date(Math.min(...dates));
-    const maxDate = new Date(Math.max(...dates));
-
+    let current = getMonday(start);
     const weeks = [];
-    let current = getMonday(minDate);
 
-    while (current <= maxDate) {
-      const start = new Date(current);
-      const end = new Date(current);
-      end.setDate(start.getDate() + 6);
+    while (current <= end) {
+      const wStart = new Date(current);
+      const wEnd = new Date(current);
+      wEnd.setDate(wStart.getDate() + 6);
 
       weeks.push({
-        label: `${format(start)} – ${format(end)}`,
-        start: toISO(start),
-        end: toISO(end)
+        label: `${format(wStart)} – ${format(wEnd)}`,
+        start: toISO(wStart),
+        end: toISO(wEnd)
       });
 
       current.setDate(current.getDate() + 7);
@@ -75,11 +63,8 @@
 
   weekSelect.addEventListener("change", e => {
     const val = e.target.value;
-
     if (!val) {
       APP_STATE.week = null;
-      APP_STATE.startDate = null;
-      APP_STATE.endDate = null;
       window.renderAll?.();
       return;
     }
@@ -96,4 +81,5 @@
   });
 
   document.addEventListener("dataLoaded", buildWeeks);
+  document.addEventListener("monthChanged", buildWeeks);
 })();
