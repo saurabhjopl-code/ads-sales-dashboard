@@ -15,7 +15,7 @@ window.APP_STATE = {
   startDate: null,
   endDate: null,
   week: null,
-  activeRoute: "sales-health"
+  activeRoute: "executive-overview"
 };
 
 // ================================
@@ -60,14 +60,14 @@ async function loadAllData() {
   initACCList();
   initNavigation();
 
-  // 🔥 IMPORTANT: notify filters that data is ready
+  // 🔔 Notify filters (Week builder)
   document.dispatchEvent(new Event("dataLoaded"));
 
   renderAll();
 }
 
 // ================================
-// ACC
+// ACC TABS
 // ================================
 function initACCList() {
   const accSet = new Set();
@@ -89,8 +89,10 @@ function initNavigation() {
     item.onclick = () => {
       document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
       item.classList.add("active");
+
       APP_STATE.activeRoute = item.dataset.route;
       document.getElementById("reportTitle").innerText = item.innerText;
+
       renderAll();
     };
   });
@@ -100,10 +102,17 @@ function initNavigation() {
 // MASTER RENDER
 // ================================
 function renderAll() {
+  // ---- Summaries (always render)
   window.renderSummaryGMV?.();
   window.renderSummaryCTR?.();
   window.renderSummaryAds?.();
   window.renderSummaryEfficiency?.();
+
+  // ---- Reports (route-based)
+  if (APP_STATE.activeRoute === "executive-overview") {
+    window.renderExecutiveOverview?.();
+    return;
+  }
 
   if (APP_STATE.activeRoute === "sales-health") window.renderSalesHealth?.();
   if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
