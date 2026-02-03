@@ -2,26 +2,17 @@
 // GLOBAL APP STATE
 // ================================
 window.APP_STATE = {
-  data: {
-    CDR: [],
-    CFR: [],
-    CKR: [],
-    PPR: [],
-    CTR: [],
-    GMV: []
-  },
+  data: { CDR: [], CFR: [], CKR: [], PPR: [], CTR: [], GMV: [] },
   accList: [],
   activeACC: null,
   startDate: null,
   endDate: null,
   week: null,
-
-  // 🔒 DEFAULT LANDING ROUTE
   activeRoute: "executive-overview"
 };
 
 // ================================
-// CSV URL CONFIG
+// CSV CONFIG
 // ================================
 const CSV_URLS = {
   CDR: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd_uFyNN_LsA0hZ4EuRYflMnzY-NwSAn9sRhvPbbeRrRkAe5d07tIEJ_gilGwvR5-H1l3jjTOdjq6j/pub?gid=0&single=true&output=csv",
@@ -32,111 +23,89 @@ const CSV_URLS = {
   GMV: "https://docs.google.com/spreadsheets/d/e/2PACX-1vTd_uFyNN_LsA0hZ4EuRYflMnzY-NwSAn9sRhvPbbeRrRkAe5d07tIEJ_gilGwvR5-H1l3jjTOdjq6j/pub?gid=1218209311&single=true&output=csv"
 };
 
-// ================================
-// CSV PARSER
-// ================================
 function parseCSV(csvText) {
   const lines = csvText.trim().split("\n");
   const headers = lines[0].split(",").map(h => h.trim());
-
   return lines.slice(1).map(row => {
     const values = row.split(",");
     const obj = {};
-    headers.forEach((h, i) => {
-      obj[h] = values[i]?.trim() || "";
-    });
+    headers.forEach((h, i) => (obj[h] = values[i]?.trim() || ""));
     return obj;
   });
 }
 
-// ================================
-// LOAD DATA
-// ================================
 async function loadAllData() {
   for (const key of Object.keys(CSV_URLS)) {
     const res = await fetch(CSV_URLS[key]);
-    const text = await res.text();
-    APP_STATE.data[key] = parseCSV(text);
+    APP_STATE.data[key] = parseCSV(await res.text());
   }
 
   initACCList();
   initNavigation();
+  initDefaultMonth();
 
-  // Notify week filter builder
   document.dispatchEvent(new Event("dataLoaded"));
-
-  // Initial render
   renderAll();
 }
 
-// ================================
-// ACC TABS
-// ================================
-function initACCList() {
-  const accSet = new Set();
-  Object.values(APP_STATE.data).forEach(arr => {
-    arr.forEach(r => r.ACC && accSet.add(r.ACC));
+function initDefaultMonth() {
+  const monthSelect = document.getElementById("monthSelector");
+  if (!monthSelect) return;
+
+  const months = new Set();
+  APP_STATE.data.GMV.forEach(r => {
+    if (r["Order Date"]) months.add(r["Order Date"].slice(0, 7));
   });
 
+  const sorted = [...months].sort().reverse();
+  monthSelect.innerHTML = "";
+
+  sorted.forEach(m => {
+    const d = new Date(m + "-01");
+    const opt = document.createElement("option");
+    opt.value = m;
+    opt.textContent = d.toLocaleString("default", { month: "long", year: "numeric" });
+    monthSelect.appendChild(opt);
+  });
+
+  monthSelect.value = sorted[0];
+  monthSelect.dispatchEvent(new Event("change"));
+}
+
+function initACCList() {
+  const accSet = new Set();
+  Object.values(APP_STATE.data).forEach(arr =>
+    arr.forEach(r => r.ACC && accSet.add(r.ACC))
+  );
   APP_STATE.accList = [...accSet];
   APP_STATE.activeACC = APP_STATE.accList[0] || null;
-
   window.renderACCTabs?.();
 }
 
-// ================================
-// NAVIGATION
-// ================================
 function initNavigation() {
   document.querySelectorAll(".nav-item").forEach(item => {
     item.onclick = () => {
-      document.querySelectorAll(".nav-item").forEach(n =>
-        n.classList.remove("active")
-      );
-
+      document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
       item.classList.add("active");
       APP_STATE.activeRoute = item.dataset.route;
       document.getElementById("reportTitle").innerText = item.innerText;
-
       renderAll();
     };
   });
-
-  // 🔒 SET ACTIVE STATE ON LOAD
-  document.querySelectorAll(".nav-item").forEach(item => {
-    if (item.dataset.route === APP_STATE.activeRoute) {
-      item.classList.add("active");
-      document.getElementById("reportTitle").innerText = item.innerText;
-    } else {
-      item.classList.remove("active");
-    }
-  });
 }
 
-// ================================
-// MASTER RENDER
-// ================================
 function renderAll() {
-  // Summaries always render
   window.renderSummaryGMV?.();
   window.renderSummaryCTR?.();
   window.renderSummaryAds?.();
   window.renderSummaryEfficiency?.();
 
-  // Route-based reports
-  if (APP_STATE.activeRoute === "executive-overview") {
-    window.renderExecutiveOverview?.();
-    return;
-  }
-
-  if (APP_STATE.activeRoute === "sales-health") window.renderSalesHealth?.();
-  if (APP_STATE.activeRoute === "spend-vs-sales") window.renderSpendVsSales?.();
-  if (APP_STATE.activeRoute === "campaign-performance") window.renderCampaignPerformance?.();
-  if (APP_STATE.activeRoute === "keyword-performance") window.renderKeywordPerformance?.();
-  if (APP_STATE.activeRoute === "placement-performance") window.renderPlacementPerformance?.();
+  if (APP_STATE.activeRoute === "executive-overview") return window.renderExecutiveOverview?.();
+  if (APP_STATE.activeRoute === "sales-health") return window.renderSalesHealth?.();
+  if (APP_STATE.activeRoute === "spend-vs-sales") return window.renderSpendVsSales?.();
+  if (APP_STATE.activeRoute === "campaign-performance") return window.renderCampaignPerformance?.();
+  if (APP_STATE.activeRoute === "keyword-performance") return window.renderKeywordPerformance?.();
+  if (APP_STATE.activeRoute === "placement-performance") return window.renderPlacementPerformance?.();
 }
 
-// ================================
-// INIT
-// ================================
 document.addEventListener("DOMContentLoaded", loadAllData);
