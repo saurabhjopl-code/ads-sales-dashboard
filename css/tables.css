@@ -4,6 +4,8 @@
   border: 1px solid var(--border);
   padding: 15px;
   margin-top: 20px;
+  overflow: auto;
+  max-height: calc(100vh - 360px);
 }
 
 table {
@@ -11,8 +13,11 @@ table {
   border-collapse: collapse;
 }
 
-th {
+thead th {
+  position: sticky;
+  top: 0;
   background: var(--bg-light);
+  z-index: 10;
   font-size: 12px;
   text-align: left;
   padding: 10px;
@@ -29,20 +34,15 @@ tr:hover td {
   background: #f9fafb;
 }
 
-/* =====================================
-   Sales Health – Trend & Totals
-   ===================================== */
-
+/* Trend helpers */
 .trend-green {
   color: #16a34a;
   font-weight: 600;
 }
-
 .trend-amber {
   color: #d97706;
   font-weight: 600;
 }
-
 .trend-red {
   color: #dc2626;
   font-weight: 600;
