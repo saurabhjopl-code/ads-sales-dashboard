@@ -3,7 +3,8 @@
 // TAB 1: GMV BASED OVERVIEW (LOCKED V3.3)
 // TAB 2: CTR BASED OVERVIEW (FINAL LOGIC)
 // PLA Metrics derived ONLY from CDR
-// Version: V3.4.3
+// UI Tabs unified with Sales Health
+// Version: V3.6.0 (LOCKED)
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -14,18 +15,21 @@ window.renderExecutiveOverview = function () {
   tableSection.innerHTML = "";
 
   // -------------------------------
-  // TABS
+  // TABS (Sales Health Style)
   // -------------------------------
-  const tabs = document.createElement("div");
-  tabs.className = "report-tabs";
-  tabs.innerHTML = `
-    <button class="tab active" data-tab="gmv">GMV BASED OVERVIEW</button>
-    <button class="tab" data-tab="ctr">TRANSACTION (CTR) BASED OVERVIEW</button>
+  tableSection.innerHTML = `
+    <div class="report-tabs">
+      <button class="tab-btn active" data-tab="gmv">
+        GMV – Based Overview
+      </button>
+      <button class="tab-btn" data-tab="ctr">
+        Transaction (CTR) – Based Overview
+      </button>
+    </div>
+    <div id="execTableContainer"></div>
   `;
-  tableSection.appendChild(tabs);
 
-  const content = document.createElement("div");
-  tableSection.appendChild(content);
+  const container = document.getElementById("execTableContainer");
 
   // -------------------------------
   // DATE FILTERS
@@ -41,7 +45,7 @@ window.renderExecutiveOverview = function () {
   }
 
   // ==================================================
-  // 1️⃣ GMV BASED AGGREGATION (UNCHANGED)
+  // 1️⃣ GMV BASED AGGREGATION
   // ==================================================
   const gmvMap = {};
 
@@ -73,7 +77,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // 2️⃣ CTR BASED AGGREGATION (FINAL)
+  // 2️⃣ CTR BASED AGGREGATION
   // ==================================================
   const ctrMap = {};
 
@@ -104,12 +108,10 @@ window.renderExecutiveOverview = function () {
       ctrMap[acc].saleUnits += qty;
       ctrMap[acc].saleAmount += amt;
     }
-
     if (subType === "Return") {
       ctrMap[acc].returnUnits += qty;
       ctrMap[acc].returnAmount += amt;
     }
-
     if (subType === "Cancellation") {
       ctrMap[acc].cancelUnits += qty;
       ctrMap[acc].cancelAmount += amt;
@@ -117,7 +119,7 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // 3️⃣ PLA METRICS (CDR – SAME FOR BOTH)
+  // 3️⃣ PLA METRICS (CDR ONLY)
   // ==================================================
   const plaMap = {};
 
@@ -138,10 +140,10 @@ window.renderExecutiveOverview = function () {
   });
 
   // ==================================================
-  // TABLE RENDERER
+  // TABLE RENDER
   // ==================================================
   function renderTable(map, type) {
-    content.innerHTML = "";
+    container.innerHTML = "";
 
     const table = document.createElement("table");
     table.innerHTML = `
@@ -190,15 +192,14 @@ window.renderExecutiveOverview = function () {
         netSale = grossSale - a.returnAmount - a.cancelAmount;
       }
 
-      const returnPct = grossUnits > 0 ? (returnUnits / grossUnits) * 100 : 0;
-      const cancelPct = grossUnits > 0 ? (cancelUnits / grossUnits) * 100 : 0;
-      const asp = netUnits > 0 ? netSale / netUnits : 0;
-
-      const actualPlaPct = netSale > 0 ? (pla.spend / netSale) * 100 : 0;
+      const returnPct = grossUnits ? (returnUnits / grossUnits) * 100 : 0;
+      const cancelPct = grossUnits ? (cancelUnits / grossUnits) * 100 : 0;
+      const asp = netUnits ? netSale / netUnits : 0;
+      const actualPlaPct = netSale ? (pla.spend / netSale) * 100 : 0;
       const projectedPla = netSale * 0.03;
       const plaDiff = pla.spend - projectedPla;
-      const plaUnitPct = grossUnits > 0 ? (pla.units / grossUnits) * 100 : 0;
-      const roi = pla.spend > 0 ? pla.revenue / pla.spend : 0;
+      const plaUnitPct = grossUnits ? (pla.units / grossUnits) * 100 : 0;
+      const roi = pla.spend ? pla.revenue / pla.spend : 0;
 
       tbody.innerHTML += `
         <tr>
@@ -221,21 +222,25 @@ window.renderExecutiveOverview = function () {
       `;
     });
 
-    content.appendChild(table);
+    container.appendChild(table);
   }
 
   // -------------------------------
   // TAB HANDLING
   // -------------------------------
-  renderTable(gmvMap, "gmv");
+  const tabButtons = tableSection.querySelectorAll(".tab-btn");
 
-  tabs.querySelectorAll(".tab").forEach(tab => {
-    tab.onclick = () => {
-      tabs.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
-      tab.classList.add("active");
-      tab.dataset.tab === "gmv"
+  tabButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach(b => b.classList.remove("active"));
+      btn.classList.add("active");
+
+      btn.dataset.tab === "gmv"
         ? renderTable(gmvMap, "gmv")
         : renderTable(ctrMap, "ctr");
-    };
+    });
   });
+
+  // Default load
+  renderTable(gmvMap, "gmv");
 };
