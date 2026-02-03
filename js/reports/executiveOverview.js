@@ -1,8 +1,9 @@
 // =======================================
 // REPORT: Executive Overview
-// TAB 1: GMV BASED OVERVIEW (POPULATED)
+// TAB 1: GMV BASED OVERVIEW (LOCKED)
+// TAB 2: CTR BASED OVERVIEW (NEW)
 // PLA Metrics derived ONLY from CDR
-// Version: V3.3 (GMV EXEC OVERVIEW)
+// Version: V3.4
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -39,10 +40,10 @@ window.renderExecutiveOverview = function () {
     return new Date(p[2], p[1] - 1, p[0]);
   }
 
-  // -------------------------------
-  // ACC MAP (GMV BASE)
-  // -------------------------------
-  const accMap = {};
+  // ==================================================
+  // 1️⃣ GMV BASED AGGREGATION (LOCKED)
+  // ==================================================
+  const gmvMap = {};
 
   APP_STATE.data.GMV.forEach(r => {
     const acc = r.ACC;
@@ -51,48 +52,96 @@ window.renderExecutiveOverview = function () {
     const d = parseDate(r["Order Date"]);
     if (!d || (start && d < start) || (end && d > end)) return;
 
-    if (!accMap[acc]) {
-      accMap[acc] = {
+    if (!gmvMap[acc]) {
+      gmvMap[acc] = {
         acc,
         grossUnits: 0,
         grossSale: 0,
         netUnits: 0,
         netSale: 0,
         returnUnits: 0,
-        cancelUnits: 0,
-        plaSpend: 0,
-        plaUnits: 0,
-        plaRevenue: 0
+        cancelUnits: 0
       };
     }
 
-    accMap[acc].grossUnits += +r["Gross Units"] || 0;
-    accMap[acc].grossSale += +r["GMV"] || 0;
-    accMap[acc].netUnits += +r["Final Sale Units"] || 0;
-    accMap[acc].netSale += +r["Final Sale Amount"] || 0;
-    accMap[acc].returnUnits += +r["Return Units"] || 0;
-    accMap[acc].cancelUnits += +r["Cancellation Units"] || 0;
+    gmvMap[acc].grossUnits += +r["Gross Units"] || 0;
+    gmvMap[acc].grossSale += +r["GMV"] || 0;
+    gmvMap[acc].netUnits += +r["Final Sale Units"] || 0;
+    gmvMap[acc].netSale += +r["Final Sale Amount"] || 0;
+    gmvMap[acc].returnUnits += +r["Return Units"] || 0;
+    gmvMap[acc].cancelUnits += +r["Cancellation Units"] || 0;
   });
 
-  // -------------------------------
-  // PLA METRICS FROM CDR ONLY
-  // -------------------------------
+  // ==================================================
+  // 2️⃣ CTR BASED AGGREGATION
+  // ==================================================
+  const ctrMap = {};
+
+  APP_STATE.data.CTR.forEach(r => {
+    const acc = r.ACC;
+    if (!acc) return;
+
+    const d = parseDate(r["Order Date"]);
+    if (!d || (start && d < start) || (end && d > end)) return;
+
+    if (!ctrMap[acc]) {
+      ctrMap[acc] = {
+        acc,
+        grossUnits: 0,
+        grossSale: 0,
+        returnUnits: 0,
+        cancelUnits: 0,
+        returnAmount: 0,
+        cancelAmount: 0
+      };
+    }
+
+    const qty = +r["Item Quantity"] || 0;
+    const amt = +r["Price before discount"] || 0;
+
+    ctrMap[acc].grossUnits += qty;
+    ctrMap[acc].grossSale += amt;
+
+    if (r["Event Type"] === "RETURN") {
+      ctrMap[acc].returnUnits += qty;
+      ctrMap[acc].returnAmount += amt;
+    }
+
+    if (r["Event Type"] === "CANCEL") {
+      ctrMap[acc].cancelUnits += qty;
+      ctrMap[acc].cancelAmount += amt;
+    }
+  });
+
+  // ==================================================
+  // 3️⃣ PLA METRICS (CDR – SAME FOR BOTH)
+  // ==================================================
+  const plaMap = {};
+
   APP_STATE.data.CDR.forEach(r => {
     const acc = r.ACC;
-    if (!acc || !accMap[acc]) return;
+    if (!acc) return;
 
     const d = parseDate(r["Date"]);
     if (!d || (start && d < start) || (end && d > end)) return;
 
-    accMap[acc].plaSpend += +r["Ad Spend"] || 0;
-    accMap[acc].plaUnits += +r["Total converted units"] || 0;
-    accMap[acc].plaRevenue += +r["Total Revenue (Rs.)"] || 0;
+    if (!plaMap[acc]) {
+      plaMap[acc] = {
+        spend: 0,
+        units: 0,
+        revenue: 0
+      };
+    }
+
+    plaMap[acc].spend += +r["Ad Spend"] || 0;
+    plaMap[acc].units += +r["Total converted units"] || 0;
+    plaMap[acc].revenue += +r["Total Revenue (Rs.)"] || 0;
   });
 
-  // -------------------------------
-  // RENDER GMV TABLE
-  // -------------------------------
-  function renderGMVTable() {
+  // ==================================================
+  // TABLE RENDERER (SHARED)
+  // ==================================================
+  function renderTable(map, type) {
     content.innerHTML = "";
 
     const table = document.createElement("table");
@@ -121,50 +170,49 @@ window.renderExecutiveOverview = function () {
 
     const tbody = table.querySelector("tbody");
 
-    Object.values(accMap)
-      .sort((a, b) => b.netSale - a.netSale)
-      .forEach(a => {
-        const returnPct =
-          a.grossUnits > 0 ? (a.returnUnits / a.grossUnits) * 100 : 0;
+    Object.values(map).forEach(a => {
+      const pla = plaMap[a.acc] || { spend: 0, units: 0, revenue: 0 };
 
-        const cancelPct =
-          a.grossUnits > 0 ? (a.cancelUnits / a.grossUnits) * 100 : 0;
+      const netUnits =
+        type === "gmv"
+          ? a.netUnits
+          : a.grossUnits - a.returnUnits - a.cancelUnits;
 
-        const asp =
-          a.netUnits > 0 ? a.netSale / a.netUnits : 0;
+      const netSale =
+        type === "gmv"
+          ? a.netSale
+          : a.grossSale - a.returnAmount - a.cancelAmount;
 
-        const actualPlaPct =
-          a.netSale > 0 ? (a.plaSpend / a.netSale) * 100 : 0;
+      const returnPct = a.grossUnits > 0 ? (a.returnUnits / a.grossUnits) * 100 : 0;
+      const cancelPct = a.grossUnits > 0 ? (a.cancelUnits / a.grossUnits) * 100 : 0;
+      const asp = netUnits > 0 ? netSale / netUnits : 0;
 
-        const projectedPla = a.netSale * 0.03;
-        const plaDiff = a.plaSpend - projectedPla;
+      const actualPlaPct = netSale > 0 ? (pla.spend / netSale) * 100 : 0;
+      const projectedPla = netSale * 0.03;
+      const plaDiff = pla.spend - projectedPla;
+      const plaUnitPct = a.grossUnits > 0 ? (pla.units / a.grossUnits) * 100 : 0;
+      const roi = pla.spend > 0 ? pla.revenue / pla.spend : 0;
 
-        const plaUnitPct =
-          a.grossUnits > 0 ? (a.plaUnits / a.grossUnits) * 100 : 0;
-
-        const roi =
-          a.plaSpend > 0 ? a.plaRevenue / a.plaSpend : 0;
-
-        tbody.innerHTML += `
-          <tr>
-            <td>${a.acc}</td>
-            <td>${a.grossUnits.toLocaleString()}</td>
-            <td>₹ ${a.grossSale.toLocaleString()}</td>
-            <td>${returnPct.toFixed(2)}%</td>
-            <td>${cancelPct.toFixed(2)}%</td>
-            <td>₹ ${a.netSale.toLocaleString()}</td>
-            <td>₹ ${asp.toFixed(2)}</td>
-            <td>₹ ${a.plaSpend.toLocaleString()}</td>
-            <td>${actualPlaPct.toFixed(2)}%</td>
-            <td>₹ ${projectedPla.toLocaleString()}</td>
-            <td>₹ ${plaDiff.toLocaleString()}</td>
-            <td>${a.plaUnits.toLocaleString()}</td>
-            <td>${plaUnitPct.toFixed(2)}%</td>
-            <td>₹ ${a.plaRevenue.toLocaleString()}</td>
-            <td>${roi.toFixed(2)}</td>
-          </tr>
-        `;
-      });
+      tbody.innerHTML += `
+        <tr>
+          <td>${a.acc}</td>
+          <td>${a.grossUnits.toLocaleString()}</td>
+          <td>₹ ${a.grossSale.toLocaleString()}</td>
+          <td>${returnPct.toFixed(2)}%</td>
+          <td>${cancelPct.toFixed(2)}%</td>
+          <td>₹ ${netSale.toLocaleString()}</td>
+          <td>₹ ${asp.toFixed(2)}</td>
+          <td>₹ ${pla.spend.toLocaleString()}</td>
+          <td>${actualPlaPct.toFixed(2)}%</td>
+          <td>₹ ${projectedPla.toLocaleString()}</td>
+          <td>₹ ${plaDiff.toLocaleString()}</td>
+          <td>${pla.units.toLocaleString()}</td>
+          <td>${plaUnitPct.toFixed(2)}%</td>
+          <td>₹ ${pla.revenue.toLocaleString()}</td>
+          <td>${roi.toFixed(2)}</td>
+        </tr>
+      `;
+    });
 
     content.appendChild(table);
   }
@@ -172,7 +220,7 @@ window.renderExecutiveOverview = function () {
   // -------------------------------
   // TAB HANDLING
   // -------------------------------
-  renderGMVTable();
+  renderTable(gmvMap, "gmv");
 
   tabs.querySelectorAll(".tab").forEach(tab => {
     tab.onclick = () => {
@@ -180,13 +228,9 @@ window.renderExecutiveOverview = function () {
       tab.classList.add("active");
 
       if (tab.dataset.tab === "gmv") {
-        renderGMVTable();
+        renderTable(gmvMap, "gmv");
       } else {
-        content.innerHTML = `
-          <div style="padding:20px; text-align:center;">
-            CTR Based Executive Overview – Coming Next
-          </div>
-        `;
+        renderTable(ctrMap, "ctr");
       }
     };
   });
