@@ -5,9 +5,7 @@
   <title>Ads & Sales Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- =========================
-       BASE STYLES
-  ========================== -->
+  <!-- BASE STYLES -->
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/sidebar.css" />
@@ -20,7 +18,14 @@
 <body>
 
   <!-- =========================
-       HEADER (GLOBAL FILTERS)
+       BRAND HEADER
+  ========================== -->
+  <header class="brand-header">
+    <img src="assets/logo.png" alt="Rajnandini Fashion" />
+  </header>
+
+  <!-- =========================
+       FILTER HEADER
   ========================== -->
   <header class="top-header">
     <div class="date-filters">
@@ -38,11 +43,9 @@
         </select>
       </label>
 
-      <!-- SINGLE RESET BUTTON -->
       <button id="resetFiltersBtn" class="tab-btn">
-  RESET
-</button>
-
+        RESET
+      </button>
 
     </div>
   </header>
@@ -50,18 +53,14 @@
   <!-- =========================
        ACC TABS
   ========================== -->
-  <section class="acc-tabs" id="accTabs">
-    <!-- Rendered by accTabs.js -->
-  </section>
+  <section class="acc-tabs" id="accTabs"></section>
 
   <!-- =========================
        APP CONTAINER
   ========================== -->
   <div class="app-container">
 
-    <!-- =========================
-         SIDEBAR
-    ========================== -->
+    <!-- SIDEBAR -->
     <aside class="sidebar">
       <nav>
         <ul>
@@ -94,14 +93,10 @@
       </nav>
     </aside>
 
-    <!-- =========================
-         MAIN CONTENT
-    ========================== -->
+    <!-- MAIN CONTENT -->
     <main class="main-content">
 
-      <!-- =========================
-           SUMMARIES (TOP)
-      ========================== -->
+      <!-- SUMMARIES -->
       <section class="summaries">
 
         <div class="summary-card" id="summary-gmv">
@@ -126,45 +121,39 @@
 
       </section>
 
-      <!-- =========================
-           REPORT CONTAINER
-      ========================== -->
+      <!-- REPORT -->
       <section class="report-container">
-
         <h2 id="reportTitle">Sales Health</h2>
-
         <div class="charts-section" id="chartsSection"></div>
         <div class="table-section" id="tableSection"></div>
-
       </section>
 
     </main>
   </div>
 
   <!-- =========================
-       LIBRARIES
+       FOOTER
   ========================== -->
+  <footer class="app-footer">
+    © Rajnandini Fashion India Limited
+  </footer>
+
+  <!-- LIBRARIES -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- =========================
-       CORE LOGIC
-  ========================== -->
+  <!-- CORE -->
   <script src="js/core/accTabs.js"></script>
   <script src="js/core/dateFilter.js"></script>
   <script src="js/core/weekFilter.js"></script>
   <script src="js/core/router.js"></script>
 
-  <!-- =========================
-       SUMMARIES
-  ========================== -->
+  <!-- SUMMARIES -->
   <script src="js/summaries/summaryGMV.js"></script>
   <script src="js/summaries/summaryCTR.js"></script>
   <script src="js/summaries/summaryAds.js"></script>
   <script src="js/summaries/summaryEfficiency.js"></script>
 
-  <!-- =========================
-       REPORTS
-  ========================== -->
+  <!-- REPORTS -->
   <script src="js/reports/executiveOverview.js"></script>
   <script src="js/reports/salesHealth.js"></script>
   <script src="js/reports/spendVsSales.js"></script>
@@ -174,4 +163,3 @@
 
 </body>
 </html>
-
