@@ -5,7 +5,9 @@
   <title>Ads & Sales Dashboard</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Base Styles -->
+  <!-- =========================
+       BASE STYLES
+  ========================== -->
   <link rel="stylesheet" href="css/base.css" />
   <link rel="stylesheet" href="css/layout.css" />
   <link rel="stylesheet" href="css/sidebar.css" />
@@ -75,11 +77,6 @@
           <li data-route="placement-performance" class="nav-item">
             Placement Performance
           </li>
-
-          <li class="nav-section">Product</li>
-          <li data-route="sku-performance" class="nav-item">
-            SKU / FSN Performance
-          </li>
         </ul>
       </nav>
     </aside>
@@ -143,31 +140,36 @@
     </main>
 
   </div>
-  <!-- Chart.js -->
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- =========================
-       JS FILES (NO LOGIC YET)
+       LIBRARIES
+  ========================== -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- =========================
+       CORE JS
   ========================== -->
   <script src="js/core/accTabs.js"></script>
   <script src="js/core/dateFilter.js"></script>
   <script src="js/core/weekFilter.js"></script>
   <script src="js/core/router.js"></script>
 
-  <!-- Summaries -->
+  <!-- =========================
+       SUMMARIES
+  ========================== -->
   <script src="js/summaries/summaryGMV.js"></script>
   <script src="js/summaries/summaryCTR.js"></script>
   <script src="js/summaries/summaryAds.js"></script>
   <script src="js/summaries/summaryEfficiency.js"></script>
 
-  <!-- Reports -->
+  <!-- =========================
+       REPORTS
+  ========================== -->
   <script src="js/reports/salesHealth.js"></script>
   <script src="js/reports/spendVsSales.js"></script>
   <script src="js/reports/campaignPerformance.js"></script>
   <script src="js/reports/keywordPerformance.js"></script>
   <script src="js/reports/placementPerformance.js"></script>
-  <script src="js/reports/skuPerformance.js"></script>
 
 </body>
 </html>
-
