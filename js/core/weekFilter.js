@@ -1,17 +1,13 @@
 // =======================================
-// WEEK FILTER (REAL WEEK BUCKETS)
+// WEEK FILTER (GMV ONLY)
 // Monday → Sunday
-// Version: V1.0 (LOCKED)
+// Version: V1.1 (LOCKED)
 // =======================================
 
 (function () {
   const weekSelect = document.getElementById("weekSelector");
-
   if (!weekSelect) return;
 
-  // -------------------------------
-  // Helpers
-  // -------------------------------
   function getMonday(date) {
     const d = new Date(date);
     const day = d.getDay();
@@ -30,21 +26,20 @@
     return d.toISOString().split("T")[0];
   }
 
-  // -------------------------------
-  // Build weeks from data
-  // -------------------------------
+  function parseDate(value) {
+    if (!value) return null;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return new Date(value);
+    const p = value.includes("/") ? value.split("/") : value.split("-");
+    return new Date(p[2], p[1] - 1, p[0]);
+  }
+
   function buildWeeks() {
     const dates = [];
 
-    // Collect dates from GMV & CTR (sales truth)
-    ["GMV", "CTR"].forEach(key => {
-      (APP_STATE.data[key] || []).forEach(r => {
-        const raw = r["Order Date"];
-        if (!raw) return;
-
-        const d = new Date(raw.includes("/") ? raw.split("/").reverse().join("-") : raw);
-        if (!isNaN(d)) dates.push(d);
-      });
+    // 🔒 ONLY GMV DATA
+    (APP_STATE.data.GMV || []).forEach(r => {
+      const d = parseDate(r["Order Date"]);
+      if (d && !isNaN(d)) dates.push(d);
     });
 
     if (!dates.length) return;
@@ -69,11 +64,7 @@
       current.setDate(current.getDate() + 7);
     }
 
-    // -------------------------------
-    // Populate dropdown
-    // -------------------------------
     weekSelect.innerHTML = `<option value="">All</option>`;
-
     weeks.forEach(w => {
       const opt = document.createElement("option");
       opt.value = `${w.start}|${w.end}`;
@@ -82,14 +73,14 @@
     });
   }
 
-  // -------------------------------
-  // On change
-  // -------------------------------
   weekSelect.addEventListener("change", e => {
     const val = e.target.value;
 
     if (!val) {
       APP_STATE.week = null;
+      APP_STATE.startDate = null;
+      APP_STATE.endDate = null;
+      window.renderAll?.();
       return;
     }
 
@@ -98,18 +89,11 @@
     APP_STATE.startDate = start;
     APP_STATE.endDate = end;
 
-    // Sync date inputs
-    const s = document.getElementById("startDate");
-    const en = document.getElementById("endDate");
-    if (s) s.value = start;
-    if (en) en.value = end;
+    document.getElementById("startDate").value = start;
+    document.getElementById("endDate").value = end;
 
     window.renderAll?.();
   });
 
-  // -------------------------------
-  // Init once data is loaded
-  // -------------------------------
   document.addEventListener("dataLoaded", buildWeeks);
-  setTimeout(buildWeeks, 800); // fallback safety
 })();
