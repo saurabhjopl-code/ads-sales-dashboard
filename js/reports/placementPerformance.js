@@ -1,7 +1,8 @@
 // =======================================
 // REPORT: Placement Performance + Efficiency Chart
-// Version: V3.8 (Built on V3.6 Reset)
+// Version: V3.8.1 (FIXED – Stable)
 // Source: PPR
+// NOTE: PPR does NOT use date filtering
 // =======================================
 
 window.renderPlacementPerformance = function () {
@@ -15,26 +16,13 @@ window.renderPlacementPerformance = function () {
 
   const acc = APP_STATE.activeACC;
 
-  const start = APP_STATE.startDate ? new Date(APP_STATE.startDate) : null;
-  const end = APP_STATE.endDate ? new Date(APP_STATE.endDate) : null;
-
-  function parseDate(v) {
-    if (!v) return null;
-    if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return new Date(v);
-    const p = v.includes("/") ? v.split("/") : v.split("-");
-    return new Date(p[2], p[1] - 1, p[0]);
-  }
-
   // ==================================================
-  // AGGREGATE: Placement → Campaign
+  // AGGREGATE: Placement → Campaign (NO DATE FILTER)
   // ==================================================
   const placementMap = {};
 
   APP_STATE.data.PPR.forEach(r => {
     if (r.ACC !== acc) return;
-
-    const d = parseDate(r["Date"] || r["Order Date"]);
-    if (!d || (start && d < start) || (end && d > end)) return;
 
     const placement = r["Placement Type"];
     const campaignId = r["Campaign ID"];
@@ -104,13 +92,19 @@ window.renderPlacementPerformance = function () {
     }
   });
 
+  const placements = Object.values(placementMap);
+  if (!placements.length) {
+    tableSection.innerHTML = "<p>No placement data available.</p>";
+    return;
+  }
+
   // ==================================================
   // PLACEMENT EFFICIENCY BUBBLE CHART
   // ==================================================
   const canvas = document.createElement("canvas");
   chartsSection.appendChild(canvas);
 
-  const bubbleData = Object.values(placementMap).map(p => {
+  const bubbleData = placements.map(p => {
     const s = p.summary;
     const revenue = s.directRevenue + s.indirectRevenue;
     const roi = s.spend ? revenue / s.spend : 0;
@@ -161,7 +155,7 @@ window.renderPlacementPerformance = function () {
   });
 
   // ==================================================
-  // TABLE STRUCTURE
+  // TABLE
   // ==================================================
   const table = document.createElement("table");
   table.innerHTML = `
@@ -200,7 +194,7 @@ window.renderPlacementPerformance = function () {
     return { ctr, avgCPC, units, revenue, roi, action, cls };
   }
 
-  Object.values(placementMap).forEach(p => {
+  placements.forEach(p => {
     const m = metrics(p.summary);
     const rowId = `pl-${p.placement.replace(/\s+/g, "-")}`;
 
