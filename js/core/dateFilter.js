@@ -1,7 +1,7 @@
 // =======================================
 // MONTH + DATE FILTER + RESET
-// Month drives Date Range (GMV based)
-// Version: V2.0 (V3.9 BASELINE)
+// Month drives Date Range (UI blank by default)
+// Version: V4.1 (FIXED)
 // =======================================
 
 (function () {
@@ -24,7 +24,7 @@
   }
 
   // -------------------------------
-  // MONTH CHANGE
+  // MONTH CHANGE (DATE UI BLANK)
   // -------------------------------
   monthSelect.addEventListener("change", () => {
     const val = monthSelect.value;
@@ -33,27 +33,30 @@
     const [y, m] = val.split("-").map(Number);
     const { start, end } = getMonthRange(y, m - 1);
 
+    // Internal state (required for reports)
     APP_STATE.startDate = toISO(start);
     APP_STATE.endDate = toISO(end);
     APP_STATE.week = null;
 
-    startInput.value = APP_STATE.startDate;
-    endInput.value = APP_STATE.endDate;
+    // UI stays blank (user-only control)
+    startInput.value = "";
+    endInput.value = "";
     if (weekSelect) weekSelect.value = "";
 
     window.renderAll?.();
   });
 
   // -------------------------------
-  // MANUAL DATE CHANGE
+  // MANUAL DATE CHANGE (OVERRIDE)
   // -------------------------------
   function onDateChange() {
     APP_STATE.startDate = startInput.value || null;
     APP_STATE.endDate = endInput.value || null;
     APP_STATE.week = null;
 
+    // Manual date overrides month
+    monthSelect.value = "";
     if (weekSelect) weekSelect.value = "";
-    if (monthSelect) monthSelect.value = "";
 
     window.renderAll?.();
   }
@@ -62,9 +65,22 @@
   endInput.addEventListener("change", onDateChange);
 
   // -------------------------------
-  // RESET
+  // RESET (FIXED)
   // -------------------------------
   resetBtn.addEventListener("click", () => {
-    document.dispatchEvent(new Event("resetMonth"));
+    // Clear UI
+    startInput.value = "";
+    endInput.value = "";
+    if (weekSelect) weekSelect.value = "";
+
+    // Reset state
+    APP_STATE.week = null;
+
+    // Re-init latest month (GMV based)
+    if (typeof initDefaultMonth === "function") {
+      initDefaultMonth();
+    } else {
+      window.location.reload(); // fallback safety
+    }
   });
 })();
