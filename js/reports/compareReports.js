@@ -1,10 +1,7 @@
 // =======================================
-// REPORT: Compare Reports (MTD vs MTD)
-// ACC LEVEL – TRUE MTD LOGIC (PERFORMANCE SAFE)
-// Sections:
-// 1. Executive Summary
-// 2. Expandable Detail (GMV / CTR / ADS)
-// Version: V4.4.1 (LOCKED)
+// REPORT: Compare Reports (TRUE MTD vs MTD)
+// ACC LEVEL – GMV ANCHORED – FILTER SAFE
+// Version: V4.5.0 (LOCKED)
 // =======================================
 
 window.renderCompareReports = function () {
@@ -31,43 +28,37 @@ window.renderCompareReports = function () {
   }
 
   // -------------------------------
-  // TRUE MTD DATE WINDOW (GMV ANCHOR)
+  // GMV DATE ANCHOR (ACC ONLY)
   // -------------------------------
-  const accGMVDates = APP_STATE.data.GMV
+  const gmvDates = APP_STATE.data.GMV
     .filter(r => r.ACC === acc)
     .map(r => parseDate(r["Order Date"]))
     .filter(d => d && !isNaN(d));
 
-  if (!accGMVDates.length) {
-    tableSection.innerHTML = "<p>No GMV data available</p>";
+  if (!gmvDates.length) {
+    tableSection.innerHTML = "<p>No GMV data</p>";
     return;
   }
 
-  // Latest available GMV date (ONCE)
-  const latestDate = new Date(
-    Math.max(...accGMVDates.map(d => d.getTime()))
-  );
+  const latestGMVDate = new Date(Math.max(...gmvDates.map(d => d.getTime())));
 
-  // Current MTD: 1st → latest available date
   const currStart = new Date(
-    latestDate.getFullYear(),
-    latestDate.getMonth(),
+    latestGMVDate.getFullYear(),
+    latestGMVDate.getMonth(),
     1
   );
-  const currEnd = latestDate;
+  const currEnd = latestGMVDate;
 
-  // Number of days in current MTD
-  const mtdDayCount =
-    Math.floor((currEnd - currStart) / (1000 * 60 * 60 * 24)) + 1;
+  const dayCount =
+    Math.floor((currEnd - currStart) / 86400000) + 1;
 
-  // Previous MTD: same day span
   const prevStart = new Date(
     currStart.getFullYear(),
     currStart.getMonth() - 1,
     1
   );
   const prevEnd = new Date(prevStart);
-  prevEnd.setDate(prevStart.getDate() + mtdDayCount - 1);
+  prevEnd.setDate(prevStart.getDate() + dayCount - 1);
 
   // -------------------------------
   // AGGREGATORS
@@ -82,7 +73,7 @@ window.renderCompareReports = function () {
   const ADS_PREV = { spend: 0, revenue: 0, units: 0 };
 
   // -------------------------------
-  // GMV (Final Sale Only)
+  // GMV (STRICT WINDOW)
   // -------------------------------
   APP_STATE.data.GMV.forEach(r => {
     if (r.ACC !== acc) return;
@@ -102,12 +93,12 @@ window.renderCompareReports = function () {
   });
 
   // -------------------------------
-  // CTR (Event Sub Type based)
+  // CTR (STRICT WINDOW)
   // -------------------------------
   APP_STATE.data.CTR.forEach(r => {
     if (r.ACC !== acc) return;
     const d = parseDate(r["Order Date"]);
-    if (!d) return;
+    if (!d || d > latestGMVDate) return;
 
     const tgt =
       d >= currStart && d <= currEnd ? CTR_CURR :
@@ -127,12 +118,12 @@ window.renderCompareReports = function () {
   });
 
   // -------------------------------
-  // ADS (CDR)
+  // ADS (CDR – HARD CAPPED)
   // -------------------------------
   APP_STATE.data.CDR.forEach(r => {
     if (r.ACC !== acc) return;
     const d = parseDate(r["Date"]);
-    if (!d) return;
+    if (!d || d > latestGMVDate) return;
 
     const tgt =
       d >= currStart && d <= currEnd ? ADS_CURR :
@@ -149,18 +140,14 @@ window.renderCompareReports = function () {
   // HELPERS
   // -------------------------------
   function delta(a, b) {
-    return {
-      v: a - b,
-      p: b ? ((a - b) / b) * 100 : 0
-    };
+    return { v: a - b, p: b ? ((a - b) / b) * 100 : 0 };
   }
 
   function row(label, c, p) {
     const d = delta(c, p);
     const cls =
       d.p > 3 ? "trend-green" :
-      d.p < -3 ? "trend-red" :
-      "trend-amber";
+      d.p < -3 ? "trend-red" : "trend-amber";
 
     return `
       <tr>
@@ -174,7 +161,7 @@ window.renderCompareReports = function () {
   }
 
   // ===============================
-  // SECTION 1 – EXEC SUMMARY
+  // EXECUTIVE SUMMARY
   // ===============================
   tableSection.innerHTML = `
     <h3>Executive Summary (MTD vs MTD)</h3>
@@ -200,49 +187,4 @@ window.renderCompareReports = function () {
       </tbody>
     </table>
   `;
-
-  // ===============================
-  // SECTION 2 – EXPAND / COLLAPSE
-  // ===============================
-  function expandable(title, rows) {
-    return `
-      <details open>
-        <summary><strong>${title}</strong></summary>
-        <table>
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>Current</th>
-              <th>Last</th>
-              <th>Δ</th>
-              <th>Δ %</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </details>
-    `;
-  }
-
-  tableSection.innerHTML += expandable(
-    "GMV Comparison",
-    row("Net Sale", GMV_CURR.value, GMV_PREV.value) +
-    row("Units", GMV_CURR.units, GMV_PREV.units) +
-    row("Returns", GMV_CURR.returns, GMV_PREV.returns) +
-    row("Cancellations", GMV_CURR.cancels, GMV_PREV.cancels)
-  );
-
-  tableSection.innerHTML += expandable(
-    "CTR Comparison",
-    row("Sale Units", CTR_CURR.units, CTR_PREV.units) +
-    row("Returns", CTR_CURR.returns, CTR_PREV.returns) +
-    row("Cancellations", CTR_CURR.cancels, CTR_PREV.cancels)
-  );
-
-  tableSection.innerHTML += expandable(
-    "Ads Comparison (CDR)",
-    row("Spend", ADS_CURR.spend, ADS_PREV.spend) +
-    row("Revenue", ADS_CURR.revenue, ADS_PREV.revenue) +
-    row("Units", ADS_CURR.units, ADS_PREV.units)
-  );
 };
