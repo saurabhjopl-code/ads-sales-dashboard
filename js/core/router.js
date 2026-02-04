@@ -148,6 +148,10 @@ function renderAll() {
     return window.renderKeywordPerformance?.();
   if (APP_STATE.activeRoute === "placement-performance")
     return window.renderPlacementPerformance?.();
+
+  // ✅ NEW REPORT (ADDITIVE ONLY)
+  if (APP_STATE.activeRoute === "compare-reports")
+    return window.renderCompareReports?.();
 }
 
 // ================================
