@@ -1,10 +1,7 @@
 // =======================================
 // REPORT: Compare Reports (MTD vs MTD)
-// ACC LEVEL INSIGHT (FIXED)
-// Sections:
-// 1. Executive Summary
-// 2. Expandable Detail (GMV / CTR / ADS)
-// Version: V4.3 (LOCKED)
+// ACC LEVEL – TRUE MTD LOGIC (FIXED)
+// Version: V4.4 (LOCKED)
 // =======================================
 
 window.renderCompareReports = function () {
@@ -31,34 +28,39 @@ window.renderCompareReports = function () {
   }
 
   // -------------------------------
-  // GMV ANCHOR DATES (ACC LEVEL)
+  // TRUE MTD DATE WINDOW (GMV ANCHOR)
   // -------------------------------
-  const allDates = APP_STATE.data.GMV
+  const currMonthDates = APP_STATE.data.GMV
     .filter(r => r.ACC === acc)
     .map(r => parseDate(r["Order Date"]))
-    .filter(Boolean);
+    .filter(d => d && d.getMonth() === new Date(Math.max(...APP_STATE.data.GMV
+      .filter(x => x.ACC === acc)
+      .map(x => parseDate(x["Order Date"])))
+    ).getMonth());
 
-  if (!allDates.length) {
+  if (!currMonthDates.length) {
     tableSection.innerHTML = "<p>No GMV data available</p>";
     return;
   }
 
-  const latestDate = new Date(Math.max(...allDates));
-  const cutoffDay = latestDate.getDate();
-
-  const currStart = new Date(latestDate.getFullYear(), latestDate.getMonth(), 1);
-  const currEnd = latestDate;
-
-  const prevStart = new Date(
-    latestDate.getFullYear(),
-    latestDate.getMonth() - 1,
+  const currStart = new Date(
+    currMonthDates[0].getFullYear(),
+    currMonthDates[0].getMonth(),
     1
   );
-  const prevEnd = new Date(
-    latestDate.getFullYear(),
-    latestDate.getMonth() - 1,
-    cutoffDay
+
+  const currEnd = new Date(Math.max(...currMonthDates));
+  const mtdDayCount =
+    Math.floor((currEnd - currStart) / (1000 * 60 * 60 * 24)) + 1;
+
+  const prevStart = new Date(
+    currStart.getFullYear(),
+    currStart.getMonth() - 1,
+    1
   );
+
+  const prevEnd = new Date(prevStart);
+  prevEnd.setDate(prevStart.getDate() + mtdDayCount - 1);
 
   // -------------------------------
   // AGGREGATORS
@@ -67,28 +69,22 @@ window.renderCompareReports = function () {
     return { units: 0, value: 0, returns: 0, cancels: 0 };
   }
 
-  const GMV_CURR = blank(),
-    GMV_PREV = blank();
-  const CTR_CURR = blank(),
-    CTR_PREV = blank();
+  const GMV_CURR = blank(), GMV_PREV = blank();
+  const CTR_CURR = blank(), CTR_PREV = blank();
   const ADS_CURR = { spend: 0, revenue: 0, units: 0 };
   const ADS_PREV = { spend: 0, revenue: 0, units: 0 };
 
-  // ===============================
-  // GMV (ACC LEVEL)
-  // ===============================
+  // -------------------------------
+  // GMV
+  // -------------------------------
   APP_STATE.data.GMV.forEach(r => {
     if (r.ACC !== acc) return;
-
     const d = parseDate(r["Order Date"]);
     if (!d) return;
 
     const tgt =
-      d >= currStart && d <= currEnd
-        ? GMV_CURR
-        : d >= prevStart && d <= prevEnd
-        ? GMV_PREV
-        : null;
+      d >= currStart && d <= currEnd ? GMV_CURR :
+      d >= prevStart && d <= prevEnd ? GMV_PREV : null;
 
     if (!tgt) return;
 
@@ -98,51 +94,42 @@ window.renderCompareReports = function () {
     tgt.cancels += +r["Cancellation Units"] || 0;
   });
 
-  // ===============================
-  // CTR (ACC LEVEL)
-  // ===============================
+  // -------------------------------
+  // CTR
+  // -------------------------------
   APP_STATE.data.CTR.forEach(r => {
     if (r.ACC !== acc) return;
-
     const d = parseDate(r["Order Date"]);
     if (!d) return;
 
     const tgt =
-      d >= currStart && d <= currEnd
-        ? CTR_CURR
-        : d >= prevStart && d <= prevEnd
-        ? CTR_PREV
-        : null;
+      d >= currStart && d <= currEnd ? CTR_CURR :
+      d >= prevStart && d <= prevEnd ? CTR_PREV : null;
 
     if (!tgt) return;
 
     const qty = +r["Item Quantity"] || 0;
     const amt = +r["Price before discount"] || 0;
-    const t = r["Event Sub Type"];
 
-    if (t === "Sale") {
+    if (r["Event Sub Type"] === "Sale") {
       tgt.units += qty;
       tgt.value += amt;
     }
-    if (t === "Return") tgt.returns += qty;
-    if (t === "Cancellation") tgt.cancels += qty;
+    if (r["Event Sub Type"] === "Return") tgt.returns += qty;
+    if (r["Event Sub Type"] === "Cancellation") tgt.cancels += qty;
   });
 
-  // ===============================
-  // ADS (CDR – ACC LEVEL)
-  // ===============================
+  // -------------------------------
+  // ADS (CDR)
+  // -------------------------------
   APP_STATE.data.CDR.forEach(r => {
     if (r.ACC !== acc) return;
-
     const d = parseDate(r["Date"]);
     if (!d) return;
 
     const tgt =
-      d >= currStart && d <= currEnd
-        ? ADS_CURR
-        : d >= prevStart && d <= prevEnd
-        ? ADS_PREV
-        : null;
+      d >= currStart && d <= currEnd ? ADS_CURR :
+      d >= prevStart && d <= prevEnd ? ADS_PREV : null;
 
     if (!tgt) return;
 
@@ -155,16 +142,15 @@ window.renderCompareReports = function () {
   // HELPERS
   // -------------------------------
   function delta(a, b) {
-    return {
-      v: a - b,
-      p: b ? ((a - b) / b) * 100 : 0
-    };
+    return { v: a - b, p: b ? ((a - b) / b) * 100 : 0 };
   }
 
   function row(label, c, p) {
     const d = delta(c, p);
     const cls =
-      d.p > 3 ? "trend-green" : d.p < -3 ? "trend-red" : "trend-amber";
+      d.p > 3 ? "trend-green" :
+      d.p < -3 ? "trend-red" :
+      "trend-amber";
 
     return `
       <tr>
@@ -178,7 +164,7 @@ window.renderCompareReports = function () {
   }
 
   // ===============================
-  // SECTION 1 – EXEC SUMMARY
+  // EXEC SUMMARY
   // ===============================
   tableSection.innerHTML = `
     <h3>Executive Summary (MTD vs MTD)</h3>
@@ -204,49 +190,4 @@ window.renderCompareReports = function () {
       </tbody>
     </table>
   `;
-
-  // ===============================
-  // SECTION 2 – EXPAND / COLLAPSE
-  // ===============================
-  function expandable(title, rows) {
-    return `
-      <details open>
-        <summary><strong>${title}</strong></summary>
-        <table>
-          <thead>
-            <tr>
-              <th>Metric</th>
-              <th>Current</th>
-              <th>Last</th>
-              <th>Δ</th>
-              <th>Δ %</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </details>
-    `;
-  }
-
-  tableSection.innerHTML += expandable(
-    "GMV Comparison",
-    row("Net Sale", GMV_CURR.value, GMV_PREV.value) +
-      row("Units", GMV_CURR.units, GMV_PREV.units) +
-      row("Returns", GMV_CURR.returns, GMV_PREV.returns) +
-      row("Cancellations", GMV_CURR.cancels, GMV_PREV.cancels)
-  );
-
-  tableSection.innerHTML += expandable(
-    "CTR Comparison",
-    row("Sale Units", CTR_CURR.units, CTR_PREV.units) +
-      row("Returns", CTR_CURR.returns, CTR_PREV.returns) +
-      row("Cancellations", CTR_CURR.cancels, CTR_PREV.cancels)
-  );
-
-  tableSection.innerHTML += expandable(
-    "Ads Comparison (CDR)",
-    row("Spend", ADS_CURR.spend, ADS_PREV.spend) +
-      row("Revenue", ADS_CURR.revenue, ADS_PREV.revenue) +
-      row("Units", ADS_CURR.units, ADS_PREV.units)
-  );
 };
