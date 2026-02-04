@@ -4,7 +4,7 @@
 // TAB 2: CTR BASED OVERVIEW (FINAL LOGIC)
 // PLA Metrics derived ONLY from CDR
 // UI Tabs unified with Sales Health
-// Version: V3.6.0 (LOCKED)
+// Version: V4.1 (Grand Total Added – SAFE)
 // =======================================
 
 window.renderExecutiveOverview = function () {
@@ -171,6 +171,17 @@ window.renderExecutiveOverview = function () {
 
     const tbody = table.querySelector("tbody");
 
+    // ===== GRAND TOTAL ACCUMULATORS =====
+    let T_grossUnits = 0,
+        T_grossSale = 0,
+        T_netUnits = 0,
+        T_netSale = 0,
+        T_returnUnits = 0,
+        T_cancelUnits = 0,
+        T_plaSpend = 0,
+        T_plaUnits = 0,
+        T_plaRevenue = 0;
+
     Object.values(map).forEach(a => {
       const pla = plaMap[a.acc] || { spend: 0, units: 0, revenue: 0 };
 
@@ -201,6 +212,17 @@ window.renderExecutiveOverview = function () {
       const plaUnitPct = grossUnits ? (pla.units / grossUnits) * 100 : 0;
       const roi = pla.spend ? pla.revenue / pla.spend : 0;
 
+      // ===== ADD TO TOTALS =====
+      T_grossUnits += grossUnits;
+      T_grossSale += grossSale;
+      T_netUnits += netUnits;
+      T_netSale += netSale;
+      T_returnUnits += returnUnits;
+      T_cancelUnits += cancelUnits;
+      T_plaSpend += pla.spend;
+      T_plaUnits += pla.units;
+      T_plaRevenue += pla.revenue;
+
       tbody.innerHTML += `
         <tr>
           <td>${a.acc}</td>
@@ -221,6 +243,36 @@ window.renderExecutiveOverview = function () {
         </tr>
       `;
     });
+
+    // ===== GRAND TOTAL ROW =====
+    const T_returnPct = T_grossUnits ? (T_returnUnits / T_grossUnits) * 100 : 0;
+    const T_cancelPct = T_grossUnits ? (T_cancelUnits / T_grossUnits) * 100 : 0;
+    const T_asp = T_netUnits ? T_netSale / T_netUnits : 0;
+    const T_actualPlaPct = T_netSale ? (T_plaSpend / T_netSale) * 100 : 0;
+    const T_projectedPla = T_netSale * 0.03;
+    const T_plaDiff = T_plaSpend - T_projectedPla;
+    const T_plaUnitPct = T_grossUnits ? (T_plaUnits / T_grossUnits) * 100 : 0;
+    const T_roi = T_plaSpend ? T_plaRevenue / T_plaSpend : 0;
+
+    tbody.innerHTML += `
+      <tr class="grand-total">
+        <td>Grand Total</td>
+        <td>${T_grossUnits.toLocaleString()}</td>
+        <td>₹ ${T_grossSale.toLocaleString()}</td>
+        <td>${T_returnPct.toFixed(2)}%</td>
+        <td>${T_cancelPct.toFixed(2)}%</td>
+        <td>₹ ${T_netSale.toLocaleString()}</td>
+        <td>₹ ${T_asp.toFixed(2)}</td>
+        <td>₹ ${T_plaSpend.toLocaleString()}</td>
+        <td>${T_actualPlaPct.toFixed(2)}%</td>
+        <td>₹ ${T_projectedPla.toLocaleString()}</td>
+        <td>₹ ${T_plaDiff.toLocaleString()}</td>
+        <td>${T_plaUnits.toLocaleString()}</td>
+        <td>${T_plaUnitPct.toFixed(2)}%</td>
+        <td>₹ ${T_plaRevenue.toLocaleString()}</td>
+        <td>${T_roi.toFixed(2)}</td>
+      </tr>
+    `;
 
     container.appendChild(table);
   }
