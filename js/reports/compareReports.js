@@ -1,7 +1,10 @@
 // =======================================
 // REPORT: Compare Reports (MTD vs MTD)
-// ACC LEVEL – TRUE MTD LOGIC (FIXED)
-// Version: V4.4 (LOCKED)
+// ACC LEVEL – TRUE MTD LOGIC (PERFORMANCE SAFE)
+// Sections:
+// 1. Executive Summary
+// 2. Expandable Detail (GMV / CTR / ADS)
+// Version: V4.4.1 (LOCKED)
 // =======================================
 
 window.renderCompareReports = function () {
@@ -30,35 +33,39 @@ window.renderCompareReports = function () {
   // -------------------------------
   // TRUE MTD DATE WINDOW (GMV ANCHOR)
   // -------------------------------
-  const currMonthDates = APP_STATE.data.GMV
+  const accGMVDates = APP_STATE.data.GMV
     .filter(r => r.ACC === acc)
     .map(r => parseDate(r["Order Date"]))
-    .filter(d => d && d.getMonth() === new Date(Math.max(...APP_STATE.data.GMV
-      .filter(x => x.ACC === acc)
-      .map(x => parseDate(x["Order Date"])))
-    ).getMonth());
+    .filter(d => d && !isNaN(d));
 
-  if (!currMonthDates.length) {
+  if (!accGMVDates.length) {
     tableSection.innerHTML = "<p>No GMV data available</p>";
     return;
   }
 
-  const currStart = new Date(
-    currMonthDates[0].getFullYear(),
-    currMonthDates[0].getMonth(),
-    1
+  // Latest available GMV date (ONCE)
+  const latestDate = new Date(
+    Math.max(...accGMVDates.map(d => d.getTime()))
   );
 
-  const currEnd = new Date(Math.max(...currMonthDates));
+  // Current MTD: 1st → latest available date
+  const currStart = new Date(
+    latestDate.getFullYear(),
+    latestDate.getMonth(),
+    1
+  );
+  const currEnd = latestDate;
+
+  // Number of days in current MTD
   const mtdDayCount =
     Math.floor((currEnd - currStart) / (1000 * 60 * 60 * 24)) + 1;
 
+  // Previous MTD: same day span
   const prevStart = new Date(
     currStart.getFullYear(),
     currStart.getMonth() - 1,
     1
   );
-
   const prevEnd = new Date(prevStart);
   prevEnd.setDate(prevStart.getDate() + mtdDayCount - 1);
 
@@ -75,7 +82,7 @@ window.renderCompareReports = function () {
   const ADS_PREV = { spend: 0, revenue: 0, units: 0 };
 
   // -------------------------------
-  // GMV
+  // GMV (Final Sale Only)
   // -------------------------------
   APP_STATE.data.GMV.forEach(r => {
     if (r.ACC !== acc) return;
@@ -95,7 +102,7 @@ window.renderCompareReports = function () {
   });
 
   // -------------------------------
-  // CTR
+  // CTR (Event Sub Type based)
   // -------------------------------
   APP_STATE.data.CTR.forEach(r => {
     if (r.ACC !== acc) return;
@@ -142,7 +149,10 @@ window.renderCompareReports = function () {
   // HELPERS
   // -------------------------------
   function delta(a, b) {
-    return { v: a - b, p: b ? ((a - b) / b) * 100 : 0 };
+    return {
+      v: a - b,
+      p: b ? ((a - b) / b) * 100 : 0
+    };
   }
 
   function row(label, c, p) {
@@ -164,7 +174,7 @@ window.renderCompareReports = function () {
   }
 
   // ===============================
-  // EXEC SUMMARY
+  // SECTION 1 – EXEC SUMMARY
   // ===============================
   tableSection.innerHTML = `
     <h3>Executive Summary (MTD vs MTD)</h3>
@@ -190,4 +200,49 @@ window.renderCompareReports = function () {
       </tbody>
     </table>
   `;
+
+  // ===============================
+  // SECTION 2 – EXPAND / COLLAPSE
+  // ===============================
+  function expandable(title, rows) {
+    return `
+      <details open>
+        <summary><strong>${title}</strong></summary>
+        <table>
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Current</th>
+              <th>Last</th>
+              <th>Δ</th>
+              <th>Δ %</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </details>
+    `;
+  }
+
+  tableSection.innerHTML += expandable(
+    "GMV Comparison",
+    row("Net Sale", GMV_CURR.value, GMV_PREV.value) +
+    row("Units", GMV_CURR.units, GMV_PREV.units) +
+    row("Returns", GMV_CURR.returns, GMV_PREV.returns) +
+    row("Cancellations", GMV_CURR.cancels, GMV_PREV.cancels)
+  );
+
+  tableSection.innerHTML += expandable(
+    "CTR Comparison",
+    row("Sale Units", CTR_CURR.units, CTR_PREV.units) +
+    row("Returns", CTR_CURR.returns, CTR_PREV.returns) +
+    row("Cancellations", CTR_CURR.cancels, CTR_PREV.cancels)
+  );
+
+  tableSection.innerHTML += expandable(
+    "Ads Comparison (CDR)",
+    row("Spend", ADS_CURR.spend, ADS_PREV.spend) +
+    row("Revenue", ADS_CURR.revenue, ADS_PREV.revenue) +
+    row("Units", ADS_CURR.units, ADS_PREV.units)
+  );
 };
