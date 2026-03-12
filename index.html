@@ -1,163 +1,40 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <title>Ads & Sales Dashboard</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Flipkart Sales & PLA Analytics</title>
 
-  <!-- BASE STYLES -->
-  <link rel="stylesheet" href="css/base.css" />
-  <link rel="stylesheet" href="css/layout.css" />
-  <link rel="stylesheet" href="css/sidebar.css" />
-  <link rel="stylesheet" href="css/tabs.css" />
-  <link rel="stylesheet" href="css/summary.css" />
-  <link rel="stylesheet" href="css/tables.css" />
-  <link rel="stylesheet" href="css/charts.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="css/reset.css" />
+    <link rel="stylesheet" href="css/variables.css" />
+    <link rel="stylesheet" href="css/layout.css" />
+    <link rel="stylesheet" href="css/components.css" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="icon" href="assets/favicon.png">
 </head>
-
 <body>
 
-  <!-- BRAND HEADER -->
-  <header class="brand-header">
-    <div class="brand-left">
-      <img src="assets/logo.png" alt="Rajnandini Fashion" />
+<div class="app">
+
+    <header class="app-header">
+        <div class="logo">📊</div>
+        <div class="title">Flipkart Sales & PLA Analytics</div>
+        <div class="spacer"></div>
+    </header>
+
+    <div id="progress-bar"></div>
+    <div id="filter-bar" class="filter-bar"></div>
+
+    <div class="app-body">
+        <aside id="sidebar" class="sidebar"></aside>
+        <main id="app-content" class="content"></main>
     </div>
-    <div class="brand-center">
-      Flipkart Ads & Sales Report
-    </div>
-    <div class="brand-right"></div>
-  </header>
 
-  <!-- FILTER HEADER -->
-  <header class="top-header">
-    <div class="date-filters">
+</div>
 
-      <label>
-        Month
-        <select id="monthSelector"></select>
-      </label>
-
-      <label>
-        Date Range
-        <input type="date" id="startDate" />
-        <input type="date" id="endDate" />
-      </label>
-
-      <label>
-        Week
-        <select id="weekSelector">
-          <option value="">All</option>
-        </select>
-      </label>
-
-      <button id="resetFiltersBtn" class="tab-btn">
-        RESET
-      </button>
-
-    </div>
-  </header>
-
-  <!-- ACC TABS -->
-  <section class="acc-tabs" id="accTabs"></section>
-
-  <div class="app-container">
-
-    <!-- SIDEBAR -->
-    <aside class="sidebar">
-      <nav>
-        <ul>
-          <li class="nav-section">Dashboard</li>
-          <li data-route="executive-overview" class="nav-item">
-            Executive Overview
-          </li>
-
-          <li class="nav-section">Sales</li>
-          <li data-route="sales-health" class="nav-item active">
-            Sales Health
-          </li>
-
-          <li class="nav-section">Advertising</li>
-          <li data-route="spend-vs-sales" class="nav-item">
-            Spend vs Sales
-          </li>
-          <li data-route="campaign-performance" class="nav-item">
-            Campaign Performance
-          </li>
-          <li data-route="keyword-performance" class="nav-item">
-            Keyword Performance
-          </li>
-          <li data-route="placement-performance" class="nav-item">
-            Placement Performance
-          </li>
-          <li class="nav-section">Insights</li>
-<li data-route="compare-reports" class="nav-item">
-  Compare Reports
-</li>
-
-        </ul>
-      </nav>
-    </aside>
-
-    <!-- MAIN -->
-    <main class="main-content">
-
-      <section class="summaries">
-        <div class="summary-card" id="summary-gmv">
-          <h3>Sales Performance Snapshot (GMV)</h3>
-          <div class="summary-grid"></div>
-        </div>
-        <div class="summary-card" id="summary-ctr">
-          <h3>Sales Performance Snapshot (Transactions)</h3>
-          <div class="summary-grid"></div>
-        </div>
-        <div class="summary-card" id="summary-ads">
-          <h3>Advertising Performance Snapshot</h3>
-          <div class="summary-grid"></div>
-        </div>
-        <div class="summary-card" id="summary-efficiency">
-          <h3>Ads Efficiency & Budget Control</h3>
-          <div class="summary-grid"></div>
-        </div>
-      </section>
-
-      <section class="report-container">
-        <h2 id="reportTitle">Sales Health</h2>
-        <div class="charts-section" id="chartsSection"></div>
-        <div class="table-section" id="tableSection"></div>
-      </section>
-
-    </main>
-  </div>
-
-  <footer class="app-footer">
-    © Rajnandini Fashion India Limited
-  </footer>
-
-  <!-- LIBS -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
-
-  <!-- CORE -->
-  <script src="js/core/accTabs.js"></script>
-  <script src="js/core/dateFilter.js"></script>
-  <script src="js/core/weekFilter.js"></script>
-  <script src="js/core/router.js"></script>
-
-  <!-- SUMMARIES -->
-  <script src="js/summaries/summaryGMV.js"></script>
-  <script src="js/summaries/summaryCTR.js"></script>
-  <script src="js/summaries/summaryAds.js"></script>
-  <script src="js/summaries/summaryEfficiency.js"></script>
-
-  <!-- REPORTS -->
-  <script src="js/reports/executiveOverview.js"></script>
-  <script src="js/reports/salesHealth.js"></script>
-  <script src="js/reports/spendVsSales.js"></script>
-  <script src="js/reports/campaignPerformance.js"></script>
-  <script src="js/reports/keywordPerformance.js"></script>
-  <script src="js/reports/placementPerformance.js"></script>
-  <script src="js/reports/compareReports.js"></script>
-
-
+<script type="module" src="js/binders/appBinder.js"></script>
 </body>
 </html>
-
